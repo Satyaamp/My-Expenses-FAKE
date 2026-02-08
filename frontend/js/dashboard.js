@@ -463,7 +463,6 @@ function renderScanButtons(isValidated) {
     `;
   } else {
     container.innerHTML = `
-      <button class="cancel" onclick="resetScan()">Back</button>
       <button onclick="validateBudget()" style="background: #facc15; color: black;">🔍 Validate Budget</button>
     `;
   }
@@ -800,7 +799,6 @@ async function loadWeeklyTrend(startDate = "", endDate = "") {
     toggleChartLoading("weeklyChart", false);
   }
 }
-
 
 
 async function loadMonthlyHistogram() {

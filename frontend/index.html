@@ -325,6 +325,19 @@
       transform: translateY(-3px);
       background: #16a34a;
     }
+
+    /* Bulk Entry Image Hover */
+    .bulk-entry-img { transition: transform 0.3s ease; cursor: pointer; }
+    .bulk-entry-img:hover { transform: scale(1.03); }
+
+    /* Responsive Video Visibility */
+    .desktop-video-wrapper { display: block; }
+    .mobile-video-wrapper { display: none; }
+    @media (max-width: 768px) {
+      .desktop-video-wrapper { display: none; }
+      .mobile-video-wrapper { display: block; margin: 0 auto; max-width: 280px; }
+      .mobile-video-wrapper { display: block; }
+    }
   </style>
 </head>
 <body>
@@ -333,7 +346,9 @@
 <header class="header">
   <div class="logo">
     <img src="assets/logo1.png" alt="Dhan₹ekha Logo" />
-    <span>Dhan₹ekha</span>
+    <span>
+      <abbr title="Where Your Money Tells a Story">Dhan₹ekha</abbr>
+    </span>
   </div>
 
   <nav>
@@ -394,6 +409,42 @@
     <a href="#" onclick="openPdfModal('assets/DhanRekha_Yearly_Report_2025.pdf'); return false;" style="display: inline-flex; align-items: center; margin-top: 12px; color: #4ade80; font-size: 0.9rem; font-weight: 600; text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> See Sample Report
     </a>
+  </div>
+
+  <div class="feature-card animate-enter delay-5">
+    <h3>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom; margin-right: 8px;">
+        <path d="M21 15V5a2 2 0 0 0-2-2H7l-4 4v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path>
+        <path d="M3 7h4V3"></path>
+        <line x1="9" y1="13" x2="15" y2="13"></line>
+        <line x1="9" y1="17" x2="15" y2="17"></line>
+      </svg>
+      Multiple Entry
+    </h3>
+    <p>Save time by adding multiple expenses at once. Simply paste a list and let our smart parser organize it for you.</p>
+    
+    <div style="margin-top: 15px;">
+      <!-- Desktop Preview -->
+      <div class="video-preview-wrapper desktop-video-wrapper" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);" onclick="openVideoModal('assets/bulk-demo.mp4')">
+        <video src="https://go.screenpal.com/watch/cOnjbbn3RYF" poster="assets/bulk.png" muted loop playsinline style="width: 100%; height: auto; display: block;"></video>
+        <div class="play-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: background 0.3s;">
+          <div style="width: 50px; height: 50px; background: rgba(34, 197, 94, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 3px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Preview -->
+      <div class="video-preview-wrapper mobile-video-wrapper" style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);" onclick="openVideoModal('assets/bulk-add.mp4')">
+        <!-- <video src="assets/bulk-add.mp4" poster="assets/bulk.png" muted loop playsinline style="width: 100%; height: auto; display: block; aspect-ratio: 720/1412; background: #000; object-fit: cover;"></video> -->
+        <video src="https://go.screenpal.com/watch/cOnjbbn3RYb" poster="assets/bulk.png" muted loop playsinline style="width: 100%; height: auto; display: block;"></video>
+        <div class="play-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; transition: background 0.3s;">
+          <div style="width: 40px; height: 40px; background: rgba(34, 197, 94, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 2px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -553,6 +604,12 @@
   <iframe id="pdfFrame" class="pdf-modal-content" src=""></iframe>
 </div>
 
+<!-- VIDEO MODAL -->
+<div id="videoModal" class="image-modal">
+  <span class="close-modal" onclick="closeVideoModal()">&times;</span>
+  <video class="modal-content" id="expandedVideo" controls autoplay muted style="background: black; outline: none;"></video>
+</div>
+
 <button id="backToTopBtn" title="Back to Top">↑</button>
 
 <!-- FOOTER -->
@@ -702,6 +759,25 @@
     }
   });
 
+  // Video Modal Logic
+  const videoModal = document.getElementById("videoModal");
+  const expandedVideo = document.getElementById("expandedVideo");
+
+  window.openVideoModal = function(src) {
+    videoModal.style.display = "block";
+    expandedVideo.src = src;
+    document.body.style.overflow = 'hidden';
+  }
+
+  window.closeVideoModal = function() {
+    videoModal.style.display = "none";
+    expandedVideo.pause();
+    expandedVideo.src = "";
+    document.body.style.overflow = 'auto';
+  }
+  if (videoModal) videoModal.onclick = (e) => { if(e.target === videoModal) closeVideoModal(); };
+  document.addEventListener('keydown', (e) => { if(e.key === "Escape" && videoModal.style.display === "block") closeVideoModal(); });
+
   // Mini Carousel Logic
   let miniSlideIndex = 0;
   function moveMiniSlide(n) {
@@ -754,3 +830,4 @@
 </script>
 </body>
 </html>
+
