@@ -2,9 +2,16 @@ const service = require('../services/expense.service');
 const { success } = require('../utils/response.util');
 const Expense = require('../models/expense.model'); // 👈 Add this line at the top!
 const mongoose = require('mongoose');
+const parser = require('../utils/parser.util');
 
-exports.create = async (req, res) =>
-  success(res, await service.createExpense(req.user.id, req.body));
+exports.create = async (req, res) => {
+  try {
+    success(res, await service.createExpense(req.user.id, req.body));
+  } catch (err) {
+    console.error("[Create Expense Error]", err.message);
+    res.status(400).json({ message: err.message });
+  }
+};
 
 exports.weekly = async (req, res) =>
   success(res, await service.getWeekly(req.user.id, req.query.startDate, req.query.endDate));
@@ -41,30 +48,31 @@ exports.delete = async (req, res) => {
 };
 
 exports.addBulkExpenses = async (req, res) => {
+  const expenses = req.body;
+  const results = { added: [], failed: [] };
+
+  // Process sequentially to ensure budget is checked against the UPDATED balance after each insertion
+  for (const item of expenses) {
     try {
-        const expenses = req.body; 
-
-        // 👇 Map over the array to add USER ID and DATE info
-        const expensesWithData = expenses.map(item => {
-            const dateObj = new Date(item.date);
-            return {
-                ...item,
-                userId: req.user.id, // ✅ FIX 1: Attach the logged-in User ID
-                month: dateObj.getMonth() + 1,
-                year: dateObj.getFullYear()
-            };
-        });
-
-        const savedExpenses = await Expense.insertMany(expensesWithData);
-
-        res.status(201).json({
-            success: true,
-            count: savedExpenses.length,
-            message: "All expenses added successfully!"
-        });
+      // service.createExpense handles:
+      // 1. Month/Year extraction
+      // 2. Budget Validation (Throws error if exceeded)
+      // 3. DB Insertion
+      const saved = await service.createExpense(req.user.id, item);
+      results.added.push(saved);
     } catch (error) {
-        res.status(400).json({ success: false, error: error.message });
+      results.failed.push({
+        data: item,
+        reason: error.message
+      });
     }
+  }
+
+  res.json({
+    success: true,
+    message: `Processed ${expenses.length} items. Added: ${results.added.length}, Failed: ${results.failed.length}`,
+    results
+  });
 };
 
 
@@ -100,5 +108,27 @@ exports.yearly = async (req, res) => {
     success(res, stats, 'Yearly expenses fetched');
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.parseSource = async (req, res) => {
+  try {
+    let text = req.body.text || '';
+
+    // If an image file is uploaded, perform OCR
+    if (req.file) {
+      text = await parser.extractTextFromImage(req.file.buffer);
+    }
+
+    if (!text) {
+      return res.status(400).json({ message: "No text or image provided" });
+    }
+
+    // Parse the text into structured data
+    const expenses = parser.parseExpenseText(text);
+
+    success(res, { expenses, rawText: text }, 'Expenses parsed successfully');
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

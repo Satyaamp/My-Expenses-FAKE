@@ -22,7 +22,14 @@ let weeklyChart = null;
 let monthlyChart = null;
 let yearlyChart = null;
 let dayOfWeekChart = null;
+let scannedExpensesData = []; // Store parsed data temporarily
 let currentSlide = 0;
+
+const EXPENSE_CATEGORIES = [
+  'College Fee', 'Hostel Fee', 'Food', 'Transport', 'Groceries', 'Rent', 
+  'Stationery', 'Personal Care', 'Electric Bill', 'Water Bill', 'Cylinder', 
+  'Internet Bill', 'EMI', 'Recharge', 'Other'
+];
 
 
 /* ===============================
@@ -161,39 +168,35 @@ async function populateCategorySelect() {
   const select = document.getElementById("expenseCategory");
   if (!select) return;
 
-  try {
-    const res = await apiRequest("/expenses/categories");
-    select.innerHTML = '<option value="" disabled selected>Select Category</option>';
-    
-    if (res.data && Array.isArray(res.data)) {
-      res.data.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat;
-        option.textContent = cat;
-        select.appendChild(option);
-      });
-    }
-  } catch (err) {
-    console.error("Failed to load categories", err);
-  }
+  select.innerHTML = '<option value="" disabled selected>Select Category</option>';
+  
+  EXPENSE_CATEGORIES.forEach(cat => {
+    const option = document.createElement("option");
+    option.value = cat;
+    option.textContent = cat;
+    select.appendChild(option);
+  });
 }
 
 /* ===============================
-   DASHBOARD SUMMARY (BALANCE)
+   LOAD DASHBOARD DATA
 ================================ */
-
 async function loadDashboard() {
   try {
     const res = await apiRequest("/expenses/balance");
-
     const income = res.data.totalIncome || 0;
     const expense = res.data.totalExpense || 0;
     const balance = res.data.remainingBalance || 0;
 
     // Update Text
-    document.getElementById("balance").innerText = `₹${balance}`;
-    document.getElementById("totalIncome").innerText = `₹${income}`;
-    document.getElementById("totalExpense").innerText = `₹${expense}`;
+    const balanceEl = document.getElementById("balance");
+    if (balanceEl) balanceEl.innerText = `₹${balance}`;
+    
+    const incomeEl = document.getElementById("totalIncome");
+    if (incomeEl) incomeEl.innerText = `₹${income}`;
+    
+    const expenseEl = document.getElementById("totalExpense");
+    if (expenseEl) expenseEl.innerText = `₹${expense}`;
 
     // Calculate Liquid Fill Percentages (Income is baseline)
     const base = income > 0 ? income : (expense > 0 ? expense : 1);
@@ -203,9 +206,14 @@ async function loadDashboard() {
     const balanceFill = Math.min((balance / base) * 100, 100);
 
     // Apply Heights
-    document.getElementById("fillIncome").style.height = "100%"; // Income is the limit
-    document.getElementById("fillExpense").style.height = `${expenseFill}%`;
-    document.getElementById("fillBalance").style.height = `${Math.max(0, balanceFill)}%`;
+    const fillIncome = document.getElementById("fillIncome");
+    if (fillIncome) fillIncome.style.height = "100%"; // Income is the limit
+
+    const fillExpense = document.getElementById("fillExpense");
+    if (fillExpense) fillExpense.style.height = `${expenseFill}%`;
+
+    const fillBalance = document.getElementById("fillBalance");
+    if (fillBalance) fillBalance.style.height = `${Math.max(0, balanceFill)}%`;
 
     // Dynamic Wave Speed based on Fill Level (Higher fill = Faster waves)
     const setWaveSpeed = (id, pct) => {
@@ -222,12 +230,18 @@ async function loadDashboard() {
     setWaveSpeed("fillBalance", Math.max(0, balanceFill));
 
     // Update Hover Percentages
-    document.getElementById("pctIncome").innerText = "100%";
-    document.getElementById("pctExpense").innerText = `${((expense / base) * 100).toFixed(1)}%`;
-    document.getElementById("pctBalance").innerText = `${((balance / base) * 100).toFixed(1)}%`;
+    const pctIncome = document.getElementById("pctIncome");
+    if (pctIncome) pctIncome.innerText = "100%";
+    
+    const pctExpense = document.getElementById("pctExpense");
+    if (pctExpense) pctExpense.innerText = `${((expense / base) * 100).toFixed(1)}%`;
+    
+    const pctBalance = document.getElementById("pctBalance");
+    if (pctBalance) pctBalance.innerText = `${((balance / base) * 100).toFixed(1)}%`;
     
   } catch (err) {
     showToast(err.message, "error");
+    console.error("Dashboard load error:", err);
   }
 }
 
@@ -285,7 +299,7 @@ window.addExpense = async function () {
     showToast("Expense added successfully", "success");
 
   } catch (err) {
-    showToast(err.message, "error");
+    showDialog("Error", err.message, "error");
   }
 };
 
@@ -328,7 +342,257 @@ window.addIncome = async function () {
     showToast("Income added successfully", "success");
 
   } catch (err) {
-    showToast(err.message, "error");
+    showDialog("Error", err.message, "error");
+  }
+};
+
+/* ===============================
+   SCAN / PASTE MODAL LOGIC
+================================ */
+window.openScanModal = function() {
+  document.getElementById("scanModal").classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  resetScan();
+};
+
+window.closeScanModal = function() {
+  document.getElementById("scanModal").classList.add("hidden");
+  document.body.classList.remove("modal-open");
+};
+
+window.handleFileSelect = function(input) {
+  const fileName = input.files[0] ? input.files[0].name : "Tap to upload image";
+  document.getElementById("fileNameDisplay").innerText = fileName;
+};
+
+window.resetScan = function() {
+  document.getElementById("scanInputSection").classList.remove("hidden");
+  document.getElementById("scanPreviewSection").classList.add("hidden");
+  document.getElementById("scanImageInput").value = "";
+  document.getElementById("scanTextInput").value = "";
+  document.getElementById("fileNameDisplay").innerText = "Tap to upload image";
+  scannedExpensesData = [];
+};
+
+window.processScan = async function() {
+  const textInput = document.getElementById("scanTextInput");
+  const text = textInput.value.trim();
+
+  if (!text) {
+    showDialog("Input Required", "Please paste your expense notes to analyze.", "warning");
+    return;
+  }
+
+  try {
+    // Use apiRequest for JSON (Text Only)
+    const res = await apiRequest("/expenses/parse", "POST", { text });
+    
+    scannedExpensesData = res.data.expenses;
+    renderScanPreview(false); // false = not yet validated
+    
+    document.getElementById("scanInputSection").classList.add("hidden");
+    document.getElementById("scanPreviewSection").classList.remove("hidden");
+
+  } catch (err) {
+    showDialog("Analysis Failed", err.message || "Failed to analyze text.", "error");
+  }
+};
+
+function renderScanPreview(isValidated = false) {
+  const list = document.getElementById("scanPreviewList");
+  list.innerHTML = "";
+
+  if (scannedExpensesData.length === 0) {
+    list.innerHTML = "<p style='text-align:center; color:rgba(255,255,255,0.6);'>No expenses detected.</p>";
+    renderScanButtons(false);
+    return;
+  }
+
+  scannedExpensesData.forEach((item, index) => {
+    // Default to 'Other' if the parsed category isn't in our valid list
+    let currentCat = item.category;
+    if (!EXPENSE_CATEGORIES.includes(currentCat)) {
+      currentCat = 'Other';
+      item.category = 'Other'; // Update data to match
+    }
+
+    const options = EXPENSE_CATEGORIES.map(cat => 
+      `<option value="${cat}" ${cat === currentCat ? "selected" : ""} style="background: #333; color: white;">${cat}</option>`
+    ).join("");
+
+    const div = document.createElement("div");
+    div.className = "preview-item";
+    div.innerHTML = `
+      <div class="preview-details">
+        <span>${item.description}</span>
+        <div class="preview-meta" style="display:flex; align-items:center; gap: 6px; margin-top:4px;">
+          <span>${item.date}</span> • 
+          <select onchange="updateScannedCategory(${index}, this.value)" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 2px 8px; font-size: 0.8rem; outline: none; cursor: pointer;">${options}</select>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center;">
+        <div class="preview-amount">₹${item.amount}</div>
+        <button class="delete-scan-btn" onclick="deleteScannedItem(${index})">✕</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+
+  renderScanButtons(isValidated);
+}
+window.updateScannedCategory = function(index, value) {
+  if (scannedExpensesData[index]) {
+    scannedExpensesData[index].category = value;
+  }
+};
+
+window.deleteScannedItem = function(index) {
+  scannedExpensesData.splice(index, 1);
+  // If items change, require re-validation
+  renderScanPreview(false);
+};
+
+function renderScanButtons(isValidated) {
+  const container = document.querySelector("#scanPreviewSection .modal-actions");
+  if (!container) return;
+
+  if (isValidated) {
+    container.innerHTML = `
+      <button class="cancel" onclick="resetScan()">Back</button>
+      <button onclick="confirmScanUpload()" style="background: #22c55e; color: black;">Confirm & Save</button>
+    `;
+  } else {
+    container.innerHTML = `
+      <button class="cancel" onclick="resetScan()">Back</button>
+      <button onclick="validateBudget()" style="background: #facc15; color: black;">🔍 Validate Budget</button>
+    `;
+  }
+}
+
+window.validateBudget = async function() {
+  if (scannedExpensesData.length === 0) return;
+
+  // Group expenses by Month-Year to check budget efficiently
+  const groups = {};
+  scannedExpensesData.forEach(item => {
+    const d = new Date(item.date);
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`; // "2023-10"
+    if (!groups[key]) groups[key] = 0;
+    groups[key] += item.amount;
+  });
+
+  let allValid = true;
+  let errorItems = [];
+
+  try {
+    for (const key of Object.keys(groups)) {
+      const [year, month] = key.split('-');
+      const totalAttempt = groups[key];
+      
+      // Fetch monthly summary to get balance
+      const res = await apiRequest(`/expenses/summary/monthly?month=${month}&year=${year}`);
+      const balance = res.data.balance; // This is Income - Expense
+      
+      if (totalAttempt > balance) {
+        allValid = false;
+        const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+        
+        errorItems.push(`
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="text-align: left;">
+              <div style="font-weight: bold; color: #fff; font-size: 1rem;">${monthName} ${year}</div>
+              <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">Available: ₹${balance}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="color: #ef4444; font-weight: bold;">Need ₹${totalAttempt}</div>
+            </div>
+          </div>
+        `);
+      }
+    }
+
+    if (allValid) {
+      showToast("Budget check passed! You can add these expenses.", "success");
+      renderScanPreview(true); // Enable Confirm button
+    } else {
+      const listHtml = `<div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0 15px; margin-top: 15px; max-height: 200px; overflow-y: auto;">${errorItems.join('')}</div>`;
+      showDialog("Budget Exceeded", `The following months have insufficient funds:${listHtml}`, "warning");
+      // Stay on validate state
+    }
+  } catch (err) {
+    showDialog("Validation Error", err.message, "error");
+  }
+};
+
+window.confirmScanUpload = async function() {
+  try {
+    const res = await apiRequest("/expenses/bulk", "POST", scannedExpensesData);
+    
+    // 1. Identify all unique months from the scanned data
+    const uniqueMonths = new Set();
+    scannedExpensesData.forEach(item => {
+      if (item.date) {
+        const d = new Date(item.date);
+        uniqueMonths.add(`${d.getFullYear()}-${d.getMonth() + 1}`);
+      }
+    });
+    
+    if (uniqueMonths.size === 0) {
+      const now = new Date();
+      uniqueMonths.add(`${now.getFullYear()}-${now.getMonth() + 1}`);
+    }
+
+    // 2. Fetch updated balances for all affected months
+    const balancePromises = Array.from(uniqueMonths).map(async (key) => {
+      const [year, month] = key.split('-');
+      const balanceRes = await apiRequest(`/expenses/summary/monthly?month=${month}&year=${year}`);
+      const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+      return { 
+        monthName, 
+        year, 
+        balance: balanceRes.data.balance 
+      };
+    });
+
+    const balances = await Promise.all(balancePromises);
+
+    // 3. Helper to generate HTML list of balances
+    const generateBalanceList = () => {
+      return balances.map(b => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <span style="color: rgba(255,255,255,0.9);">${b.monthName} ${b.year}</span>
+          <span style="font-weight: bold; color: #34d399;">₹${b.balance}</span>
+        </div>
+      `).join('');
+    };
+
+    let title = "";
+    let msg = "";
+    let type = "";
+
+    if (res.results.failed.length === 0) {
+      title = "Success";
+      msg = `Expenses added successfully.<br>
+             <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0 15px; margin-top: 15px; max-height: 200px; overflow-y: auto;">
+               ${generateBalanceList()}
+             </div>`;
+      type = "success";
+    } else {
+      title = "Budget Alert";
+      msg = `${res.results.failed.length} expenses could not be added due to budget limits.<br>
+             <div style="margin-top: 10px; font-size: 0.9rem; opacity: 0.8;">Updated Balances:</div>
+             <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 0 15px; margin-top: 5px; max-height: 200px; overflow-y: auto;">
+               ${generateBalanceList()}
+             </div>`;
+      type = "warning";
+    }
+
+    showDialog(title, msg, type);
+    closeScanModal();
+    loadDashboard();
+    loadRecentExpenses();
+  } catch (err) {
+    showDialog("Error", err.message, "error");
   }
 };
 
@@ -365,6 +629,8 @@ async function loadRecentExpenses() {
 
   } catch (err) {
     showToast(err.message, "error");
+    // For background loading errors, toast is fine, but let's ensure it doesn't hide if it's critical
+    console.error(err);
   }
 }
 
@@ -907,7 +1173,7 @@ document.getElementById("monthlyChartYear")?.addEventListener("change", () => {
 /* ===============================
    TOAST NOTIFICATION HELPER
 ================================ */
-function showToast(message, type = "error") {
+function showToast(message, type = "error", duration = 3000) {
   // 1. Play Beep Sound (Short, subtle alert)
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -956,7 +1222,8 @@ function showToast(message, type = "error") {
       zIndex: "9999",
       opacity: "0",
       transition: "all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-      pointerEvents: "none",
+      pointerEvents: "auto",
+      pointerEvents: "auto", // Ensure button is clickable
       whiteSpace: "nowrap"
     });
     
@@ -972,19 +1239,112 @@ function showToast(message, type = "error") {
     toast.style.boxShadow = "0 8px 32px rgba(220, 38, 38, 0.3)";
   }
 
+  // 4. Clear existing timeout to prevent previous auto-hide from closing this new toast
+  if (toast.hideTimeout) {
+    clearTimeout(toast.hideTimeout);
+    toast.hideTimeout = null;
+  }
+
   // 4. Set text and show
-  toast.innerText = message;
+  toast.innerHTML = "";
+  const textSpan = document.createElement("span");
+  textSpan.innerText = message;
+  toast.appendChild(textSpan);
+
+  const okBtn = document.createElement("button");
+  okBtn.innerText = "OK";
+  okBtn.style.cssText = "margin-left: 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;";
+  
+  okBtn.onclick = () => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateX(-50%) translateY(20px)";
+    if (toast.hideTimeout) clearTimeout(toast.hideTimeout);
+  };
+  
+  toast.appendChild(okBtn);
+
   toast.style.opacity = "1";
   toast.style.transform = "translateX(-50%) translateY(0)";
 
   // 4. Clear existing timeout if multiple swipes happen quickly
   if (toast.hideTimeout) clearTimeout(toast.hideTimeout);
 
-  // 5. Hide after 2 seconds
-  toast.hideTimeout = setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(20px)";
-  }, 2000);
+  // 5. Hide after duration (if > 0)
+  // 5. Only set auto-hide if duration is greater than 0
+  if (duration > 0) {
+    toast.hideTimeout = setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%) translateY(20px)";
+    }, duration);
+  }
+}
+
+/* ===============================
+   CUSTOM DIALOG HELPER
+================================ */
+function showDialog(title, message, type = "info") {
+  // Remove existing dialog if any
+  const existing = document.getElementById("custom-dialog");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "custom-dialog";
+  
+  // Inline styles for the overlay
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  `;
+
+  const card = document.createElement("div");
+  // Inline styles for the card
+  card.style.cssText = `
+    background: rgba(30, 30, 35, 0.95);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 400px;
+    width: 85%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  `;
+
+  const icon = type === "success" ? "✅" : (type === "warning" ? "⚠️" : "❌");
+  const titleColor = type === "success" ? "#34d399" : (type === "warning" ? "#facc15" : "#ef4444");
+  const btnColor = type === "success" ? "#34d399" : (type === "warning" ? "#facc15" : "#ef4444");
+
+  card.innerHTML = `
+    <div style="font-size: 3.5rem; margin-bottom: 15px;">${icon}</div>
+    <h3 style="color: ${titleColor}; margin: 0 0 10px 0; font-size: 1.6rem;">${title}</h3>
+    <div style="color: rgba(255,255,255,0.8); margin-bottom: 25px; line-height: 1.6; font-size: 1rem;">${message}</div>
+    <button id="dialog-ok-btn" style="background: ${btnColor}; color: #000; border: none; padding: 12px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: transform 0.2s; box-shadow: 0 4px 15px ${btnColor}40;">OK</button>
+  `;
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = "1";
+    card.style.transform = "scale(1)";
+  });
+
+  const btn = card.querySelector("#dialog-ok-btn");
+  btn.onclick = () => {
+    overlay.style.opacity = "0";
+    card.style.transform = "scale(0.9)";
+    setTimeout(() => overlay.remove(), 300);
+  };
+  btn.focus();
 }
 
 /* ===============================
@@ -1003,4 +1363,4 @@ if (backToTopBtn) {
   backToTopBtn.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-}
+};
