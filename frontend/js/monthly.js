@@ -20,7 +20,6 @@ const modalMonthGrid = document.getElementById("modalMonthGrid");
 const monthTxCount = document.getElementById("monthTxCount");
 const downloadPdfBtn = document.getElementById("downloadPdfBtn");
 
-
 let currentMonthExpenses = [];
 let currentMonthCategories = [];
 let dailyChart = null;
@@ -136,10 +135,71 @@ async function loadMonthlyData() {
   document.getElementById("pctExpense").innerText = `${((expense / base) * 100).toFixed(1)}%`;
   document.getElementById("pctBalance").innerText = `${((balance / base) * 100).toFixed(1)}%`;
 
+  renderDailyAverage(expense, year, month);
+  renderTopCategory(res.data.categories);
+
   currentMonthCategories = res.data.categories;
   applyHistogramSort();
   renderCategoryPie(res.data.categories);
   await loadDateWiseExpenses(month, year);
+}
+
+/* ===============================
+   DAILY AVERAGE INDICATOR
+================================ */
+function renderDailyAverage(totalExpense, year, month) {
+  const avgElDesktop = document.getElementById("dailyAvgIndicatorDesktop");
+  const avgElMobile = document.getElementById("dailyAvgIndicatorMobile");
+
+  const now = new Date();
+  const isCurrentMonth = 
+    parseInt(year) === now.getFullYear() && 
+    (parseInt(month) - 1) === now.getMonth();
+
+  let dayCount = 0;
+  let label = "Avg";
+
+  if (isCurrentMonth) {
+    dayCount = now.getDate();
+    label = "Avg";
+  } else {
+    dayCount = new Date(year, month, 0).getDate();
+    label = "Avg";
+  }
+
+  const avg = dayCount > 0 ? totalExpense / dayCount : 0;
+  let html = "";
+
+  if (totalExpense > 0) {
+    html = `<span class="daily-avg-badge">₹${Math.round(avg)} / day</span>`;
+  }
+
+  if (avgElDesktop) avgElDesktop.innerHTML = html;
+  if (avgElMobile) avgElMobile.innerHTML = html;
+}
+
+/* ===============================
+   TOP CATEGORY INDICATOR
+================================ */
+function renderTopCategory(categories) {
+  const elDesktop = document.getElementById("topCategoryIndicatorDesktop");
+  const elMobile = document.getElementById("topCategoryIndicatorMobile");
+
+  // Clear previous content
+  if (elDesktop) elDesktop.innerHTML = "";
+  if (elMobile) elMobile.innerHTML = "";
+
+  if (!categories || categories.length === 0) {
+    return;
+  }
+
+  // Find category with highest total
+  const top = categories.reduce((prev, current) => (prev.total > current.total) ? prev : current);
+  
+  const html = `<span class="daily-avg-badge" style="margin-top: 4px; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">${top.category} (₹${top.total})</span>`;
+
+  if (elDesktop) elDesktop.innerHTML = html;
+  if (elMobile) elMobile.innerHTML = html;
 }
 
 /* ===============================

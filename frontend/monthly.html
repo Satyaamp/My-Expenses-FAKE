@@ -384,6 +384,65 @@
       }
     }
 
+    /* Daily Average Badge */
+    .daily-avg-badge {
+      font-size: 0.95rem;
+      padding: 6px 14px;
+      border-radius: 12px;
+      margin-top: 8px;
+      display: inline-block;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Mobile Stats Grid (Daily Avg & Top Expense) */
+    .mobile-stats-grid {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    @media (max-width: 768px) {
+      .mobile-stats-grid { display: grid; }
+    }
+
+    /* Responsive Daily Avg Visibility */
+    #dailyAvgIndicatorDesktop { display: block; }
+    #dailyAvgIndicatorMobile { display: none; }
+
+    @media (max-width: 768px) {
+      #dailyAvgIndicatorDesktop { display: none; }
+      #dailyAvgIndicatorMobile { display: block; }
+    }
+    /* Remove top margin when in header to align with buttons */
+    #dailyAvgIndicatorDesktop .daily-avg-badge { margin-top: 0; }
+
+    /* Mobile Only Stats Card */
+    .mobile-only-stats { display: none; }
+    @media (max-width: 768px) {
+      .mobile-only-stats { display: block; }
+      .mobile-only-stats .card-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 5px 0;
+      }
+    }
+
+    /* Responsive Top Category Visibility */
+    #topCategoryIndicatorDesktop { display: block; margin-left: 8px; }
+    #topCategoryIndicatorMobile { display: none; }
+
+    @media (max-width: 768px) {
+      #topCategoryIndicatorDesktop { display: none; }
+      #topCategoryIndicatorMobile { display: block; }
+    }
+    #topCategoryIndicatorDesktop .daily-avg-badge { margin-top: 0; }
+
     /* ADD TRANSACTION BUTTON (Dynamic) */
     .add-tx-btn {
       width: 100%;
@@ -522,6 +581,8 @@
         <line x1="12" y1="15" x2="12" y2="3"></line>
       </svg>
     </button>
+    <div id="dailyAvgIndicatorDesktop"></div>
+    <div id="topCategoryIndicatorDesktop"></div>
   </div>
 
   <!-- Empty State (Hidden by default) -->
@@ -569,7 +630,34 @@
         <p class="hover-percentage" id="pctBalance">0%</p>
       </div>
     </div>
+
+    <div class="summary-card glass-card mobile-only-stats">
+      <div class="card-content">
+          <h4 style="margin: 0;">Daily Average</h4>
+         <div id="dailyAvgIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"></div>
+
+          <h4 style="margin: 0;">Top Expense</h4>
+         <div id="topCategoryIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"></div>
+      </div>
+    </div>
+
   </section>
+
+  <!-- Mobile Only Stats Grid -->
+  <!-- <section class="mobile-stats-grid">
+    <div class="summary-card glass-card">
+      <div class="card-content" style="text-align: center;">
+        <h4>Daily Average</h4>
+        <div id="dailyAvgIndicatorMobile" style="margin-top: 5px;"></div>
+      </div>
+    </div>
+    <div class="summary-card glass-card">
+      <div class="card-content" style="text-align: center;">
+        <h4>Top Expense</h4>
+        <div id="topCategoryIndicatorMobile" style="margin-top: 5px;"></div>
+      </div>
+    </div>
+  </section> -->
 
   <section class="mobile-date-view glass-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;" id="mobileMonthSwipe">
