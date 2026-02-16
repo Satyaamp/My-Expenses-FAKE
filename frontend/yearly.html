@@ -121,21 +121,21 @@
         <div class="liquid-bg liquid-green" style="height: 100%; opacity: 0.1;"></div>
         <div class="card-content">
           <h4>Net Savings</h4>
-          <p id="yearlyBalance"><span class="loader"></span></p>
+          <p id="yearlyBalance">₹0</p>
         </div>
       </div>
       <div class="summary-card glass-card">
         <div class="liquid-bg liquid-blue" style="height: 100%; opacity: 0.1;"></div>
         <div class="card-content">
           <h4>Total</h4>
-          <p id="yearlyIncome"><span class="loader"></span></p>
+          <p id="yearlyIncome">₹0</p>
         </div>
       </div>
       <div class="summary-card glass-card">
         <div class="liquid-bg liquid-red" style="height: 100%; opacity: 0.1;"></div>
         <div class="card-content">
           <h4>Total Expense</h4>
-          <p id="yearlyExpense"><span class="loader"></span></p>
+          <p id="yearlyExpense">₹0</p>
         </div>
       </div>
     </section>
@@ -215,43 +215,6 @@
   <script type="module" src="js/yearly.js"></script>
   <script type="module">
     import { apiRequest, showToast } from './js/api.js';
-
-    // --- LOADER DELAY LOGIC (3 Seconds) ---
-    const MIN_LOAD_TIME = 3000; 
-
-    function manageLoader(elementId, loaderHtml) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-
-        let finalContent = el.innerHTML; 
-        const hasLoader = el.querySelector('.loader');
-        
-        if (!hasLoader && el.innerText.trim() !== "") {
-            finalContent = el.innerHTML;
-            el.innerHTML = loaderHtml;
-        }
-
-        const observer = new MutationObserver((mutations) => {
-            if (!el.querySelector('.loader')) {
-                finalContent = el.innerHTML; 
-                observer.disconnect();       
-                el.innerHTML = loaderHtml;   
-                observer.observe(el, { childList: true, subtree: true, characterData: true });
-            }
-        });
-        observer.observe(el, { childList: true, subtree: true, characterData: true });
-
-        setTimeout(() => {
-            observer.disconnect();
-            if (finalContent && !finalContent.includes('loader')) el.innerHTML = finalContent;
-        }, MIN_LOAD_TIME);
-    }
-
-    const BALL_LOADER = '<span class="loader"></span>';
-    manageLoader('yearlyBalance', BALL_LOADER);
-    manageLoader('yearlyIncome', BALL_LOADER);
-    manageLoader('yearlyExpense', BALL_LOADER);
-    // --------------------------------------
 
     const tableBody = document.getElementById('yearlyExpenseTableBody');
     const tableYearDisplay = document.getElementById('tableYearDisplay');
