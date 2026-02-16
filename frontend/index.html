@@ -338,14 +338,46 @@
       .mobile-video-wrapper { display: block; margin: 0 auto; max-width: 280px; }
       .mobile-video-wrapper { display: block; }
     }
+
+    /* Page Loader Styles */
+    #page-loader {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #000; z-index: 99999;
+      display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.5s ease;
+    }
+    .loader {
+      width: 45px; aspect-ratio: 1;
+      --c:no-repeat linear-gradient(#fff 0 0);
+      background: var(--c) 0 0, var(--c) 50% 50%, var(--c) 100% 100%;
+      animation: l17 1s infinite alternate;
+      margin: 0 auto;
+    }
+    @keyframes l17 {
+      0%, 10% {background-size:20% 100%}
+      50% {background-size:20% 20%}
+      90%, 100% {background-size:100% 20%}
+    }
   </style>
 </head>
 <body>
 
+<!-- Page Loader -->
+<div id="page-loader"><div class="loader"></div></div>
+<script>
+  window.addEventListener('load', () => {
+    const loader = document.getElementById('page-loader');
+    setTimeout(() => {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.style.display = 'none', 500);
+    }, 5000);
+  });
+</script>
+
 <!-- HEADER -->
 <header class="header">
   <div class="logo">
-    <img src="assets/logo1.png" alt="Dhan₹ekha Logo" />
+    <img src="assets/logo1.png" alt="Dhan₹ekha Logo" loading="lazy" />
     <span>
       <abbr title="Where Your Money Tells a Story">Dhan₹ekha</abbr>
     </span>
@@ -576,7 +608,7 @@
     </div>
     
     <div class="future-image">
-      <img src="assets/ai-chat1.png" alt="AI Chat Interface" class="ai-preview-img" id="aiGalleryTrigger">
+      <img src="assets/ai-chat1.png" alt="AI Chat Interface" class="ai-preview-img" id="aiGalleryTrigger" loading="lazy">
       
     </div>
   </div>
@@ -621,7 +653,7 @@
       <div class="developer-badge">
         <span style="opacity: 0.7; font-size: 0.9rem;">Developed by</span>
         <a href="https://github.com/Satyaamp" target="_blank" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: white; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-          <img src="https://github.com/Satyaamp.png" alt="Satyam" style="width: 24px; height: 24px; border-radius: 50%;">
+          <img src="https://github.com/Satyaamp.png" alt="Satyam" style="width: 24px; height: 24px; border-radius: 50%;" loading="lazy">
           <span style="font-size: 0.9rem; font-weight: 500;">Satyam</span>
         </a>
       </div>
@@ -633,7 +665,7 @@
     </div>
 
     <div class="footer-banner">
-      <img src="assets/banner.png" alt="Dhan₹ekha Banner" />
+      <img src="assets/banner.png" alt="Dhan₹ekha Banner" loading="lazy" />
     </div>
   </div>
 </footer>
@@ -830,4 +862,3 @@
 </script>
 </body>
 </html>
-

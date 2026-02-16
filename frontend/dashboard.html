@@ -47,6 +47,20 @@
 </head>
 <body>
 
+  <!-- Page Loader -->
+  <div id="page-loader"><div class="loader"></div><p class="loader-text"></p></div>
+  <script>
+    window.addEventListener('load', () => {
+      const loader = document.getElementById('page-loader');
+      const text = loader.querySelector('.loader-text');
+      if (text) text.innerText = "Preparing your dashboard...";
+      setTimeout(() => {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = 'none', 500);
+      }, 5000);
+    });
+  </script>
+
   <!-- Auth Guard -->
   <script src="js/authGuard.js"></script>
 
@@ -55,7 +69,7 @@
   <!-- Navbar -->
   <nav class="navbar glass-card">
     <div class="logo">
-        <img src="assets/logo1.png" alt="Dhan₹ekha Logo" />
+        <img src="assets/logo1.png" alt="Dhan₹ekha Logo" loading="lazy" />
         <span>
         <abbr title="Where Your Money Tells a Story">Dhan₹ekha</abbr>
         </span>
@@ -63,7 +77,7 @@
     </div>
 
     <!-- Desktop Date Range (Center) -->
-    <div id="navbarDateRange" class="navbar-date-range"></div>
+    <div id="navbarDateRange" class="navbar-date-range"><div class="loader"></div></div>
 
     <div class="nav-actions">
       <button onclick="location.href='monthly.html'" class="nav-btn-profile" title="Monthly Overview">
@@ -95,7 +109,7 @@
   </nav>
 
   <!-- Mobile Date Range (Sticky below navbar) -->
-  <div id="mobileDateRange" class="mobile-date-range glass-card"></div>
+  <div id="mobileDateRange" class="mobile-date-range glass-card"><div class="loader"></div></div>
 
   <!-- Main Dashboard -->
   <main class="container">
@@ -105,7 +119,7 @@
       <div class="liquid-bg liquid-green" id="fillBalance"></div>
       <div class="card-content">
         <h3>Remaining Balance</h3>
-        <p id="balance">₹0</p>
+        <p id="balance"><span class="loader"></span></p>
         <p class="hover-percentage" id="pctBalance">0%</p>
       </div>
     </section>
@@ -122,7 +136,7 @@
         <div class="liquid-bg liquid-blue" id="fillIncome"></div>
         <div class="card-content">
           <h4>Total Income</h4>
-          <p id="totalIncome">₹0</p>
+          <p id="totalIncome"><span class="loader"></span></p>
           <p class="hover-percentage" id="pctIncome">0%</p>
         </div>
       </div>
@@ -130,7 +144,7 @@
         <div class="liquid-bg liquid-red" id="fillExpense"></div>
         <div class="card-content">
           <h4>Total Expense</h4>
-          <p id="totalExpense">₹0</p>
+          <p id="totalExpense"><span class="loader"></span></p>
           <p class="hover-percentage" id="pctExpense">0%</p>
         </div>
       </div>
@@ -354,6 +368,51 @@
   <script type="module" src="js/dashboard.js"></script>
   <script type="module">
     import { apiRequest } from './js/api.js';
+
+    // --- LOADER DELAY LOGIC (3 Seconds) ---
+    const MIN_LOAD_TIME = 3000; 
+
+    function manageLoader(elementId, loaderHtml) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        let finalContent = el.innerHTML; 
+        
+        // If text is already present, save it and revert to loader
+        const hasLoader = el.querySelector('.loader') || el.querySelector('.loader');
+        if (!hasLoader && el.innerText.trim() !== "") {
+            finalContent = el.innerHTML;
+            el.innerHTML = loaderHtml;
+        }
+
+        const observer = new MutationObserver((mutations) => {
+            const currentLoader = el.querySelector('.loader') || el.querySelector('.loader');
+            if (!currentLoader) {
+                finalContent = el.innerHTML; // Capture the real data
+                observer.disconnect();       // Stop observing to modify
+                el.innerHTML = loaderHtml;   // Revert to loader
+                observer.observe(el, { childList: true, subtree: true, characterData: true });
+            }
+        });
+
+        observer.observe(el, { childList: true, subtree: true, characterData: true });
+
+        setTimeout(() => {
+            observer.disconnect();
+            // Restore content if it's not just the loader
+            if (finalContent && !finalContent.includes('loader')) el.innerHTML = finalContent;
+        }, MIN_LOAD_TIME);
+    }
+
+    const DATE_LOADER = '<div class="loader"></div>';
+    const BALL_LOADER = '<span class="loader"></span>';
+
+    manageLoader('navbarDateRange', DATE_LOADER);
+    manageLoader('mobileDateRange', DATE_LOADER);
+    manageLoader('balance', BALL_LOADER);
+    manageLoader('totalIncome', BALL_LOADER);
+    manageLoader('totalExpense', BALL_LOADER);
+    // --------------------------------------
 
     let allExpenses = [];
     let currentPage = 1;

@@ -549,9 +549,23 @@
 </head>
 <body>
 
+<!-- Page Loader -->
+<div id="page-loader"><div class="loader"></div><p class="loader-text"></p></div>
+<script>
+  window.addEventListener('load', () => {
+    const loader = document.getElementById('page-loader');
+    const text = loader.querySelector('.loader-text');
+    if (text) text.innerText = "Loading monthly insights...";
+    setTimeout(() => {
+      loader.style.opacity = '0';
+      setTimeout(() => loader.style.display = 'none', 500);
+    }, 5000);
+  });
+</script>
+
 <nav class="navbar glass-card">
   <div class="logo">
-    <img src="assets/logo1.png" alt="Dhan₹ekha Logo" />
+    <img src="assets/logo1.png" alt="Dhan₹ekha Logo" loading="lazy" />
     <span>Dhan₹ekha</span>
   </div>
   <div class="nav-actions">
@@ -581,8 +595,8 @@
         <line x1="12" y1="15" x2="12" y2="3"></line>
       </svg>
     </button>
-    <div id="dailyAvgIndicatorDesktop"></div>
-    <div id="topCategoryIndicatorDesktop"></div>
+    <div id="dailyAvgIndicatorDesktop"><div class="loader-dots"></div></div>
+    <div id="topCategoryIndicatorDesktop"><div class="loader-dots"></div></div>
   </div>
 
   <!-- Empty State (Hidden by default) -->
@@ -603,7 +617,7 @@
       <div class="mobile-tap-hint"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>
       <div class="card-content">
         <h4>Budget Limit</h4>
-        <p id="monthlyIncome">₹0</p>
+        <p id="monthlyIncome"><span class="loader"></span></p>
         <p class="hover-percentage" id="pctIncome">0%</p>
       </div>
     </div>
@@ -617,7 +631,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
         </div>
-        <p id="monthlyExpense">₹0</p>
+        <p id="monthlyExpense"><span class="loader"></span></p>
         <p class="hover-percentage" id="pctExpense">0%</p>
       </div>
     </div>
@@ -626,7 +640,7 @@
       <div class="mobile-tap-hint"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>
       <div class="card-content">
         <h4>Remaining Balance</h4>
-        <p id="monthlyBalance">₹0</p>
+        <p id="monthlyBalance"><span class="loader"></span></p>
         <p class="hover-percentage" id="pctBalance">0%</p>
       </div>
     </div>
@@ -634,10 +648,10 @@
     <div class="summary-card glass-card mobile-only-stats">
       <div class="card-content">
           <h4 style="margin: 0;">Daily Average</h4>
-         <div id="dailyAvgIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"></div>
+         <div id="dailyAvgIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"><div class="loader-dots"></div></div>
 
           <h4 style="margin: 0;">Top Expense</h4>
-         <div id="topCategoryIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"></div>
+         <div id="topCategoryIndicatorMobile" style="width: 100%; display: flex; justify-content: center;"><div class="loader-dots"></div></div>
       </div>
     </div>
 
@@ -787,6 +801,49 @@
 </script>
 <script type="module">
   import { apiRequest } from './js/api.js';
+
+  // --- LOADER DELAY LOGIC (3 Seconds) ---
+  const MIN_LOAD_TIME = 3000; 
+
+  function manageLoader(elementId, loaderHtml) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      let finalContent = el.innerHTML; 
+      const hasLoader = el.querySelector('.loader') || el.querySelector('.loader-dots');
+      
+      if (!hasLoader && el.innerText.trim() !== "") {
+          finalContent = el.innerHTML;
+          el.innerHTML = loaderHtml;
+      }
+
+      const observer = new MutationObserver((mutations) => {
+          if (!el.querySelector('.loader') && !el.querySelector('.loader-dots')) {
+              finalContent = el.innerHTML; 
+              observer.disconnect();       
+              el.innerHTML = loaderHtml;   
+              observer.observe(el, { childList: true, subtree: true, characterData: true });
+          }
+      });
+      observer.observe(el, { childList: true, subtree: true, characterData: true });
+
+      setTimeout(() => {
+          observer.disconnect();
+          if (finalContent && !finalContent.includes('loader')) el.innerHTML = finalContent;
+      }, MIN_LOAD_TIME);
+  }
+
+  const BALL_LOADER = '<span class="loader"></span>';
+  manageLoader('monthlyIncome', BALL_LOADER);
+  manageLoader('monthlyExpense', BALL_LOADER);
+  manageLoader('monthlyBalance', BALL_LOADER);
+
+  const DOTS_LOADER = '<div class="loader-dots"></div>';
+  manageLoader('dailyAvgIndicatorDesktop', DOTS_LOADER);
+  manageLoader('topCategoryIndicatorDesktop', DOTS_LOADER);
+  manageLoader('dailyAvgIndicatorMobile', DOTS_LOADER);
+  manageLoader('topCategoryIndicatorMobile', DOTS_LOADER);
+  // --------------------------------------
 
   let expensesSet = new Set();
 
