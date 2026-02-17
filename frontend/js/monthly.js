@@ -447,8 +447,13 @@ function renderMobileTransactions(dateStr) {
     html += tx.map(t => `
       <div class="transaction-item">
         <div class="transaction-top">
-          <span class="transaction-amount expense">-₹${t.amount}</span>
-          <span class="transaction-category">${t.category}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="transaction-amount expense">-₹${t.amount}</span>
+            <span class="transaction-category">${t.category}</span>
+          </div>
+          <div class="tx-actions">
+            <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
+          </div>
         </div>
         <div class="transaction-description">
           ${t.description || "No description"}
@@ -560,8 +565,13 @@ function selectDate(dateStr, cell) {
     html += tx.map(t => `
       <div class="transaction-item">
         <div class="transaction-top">
-          <span class="transaction-amount expense">-₹${t.amount}</span>
-          <span class="transaction-category">${t.category}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="transaction-amount expense">-₹${t.amount}</span>
+            <span class="transaction-category">${t.category}</span>
+          </div>
+          <div class="tx-actions">
+            <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
+          </div>
         </div>
         <div class="transaction-description">
           ${t.description || "No description"}
@@ -1469,6 +1479,8 @@ window.openAddExpenseModal = function(dateStr) {
   if(modal && dateInput) {
     dateInput.value = dateStr; // Pre-fill selected date
     modal.classList.remove("hidden");
+    document.getElementById("expenseModalTitle").innerText = "Add Expense";
+    document.getElementById("editExpenseId").value = "";
     document.body.classList.add("modal-open");
   }
 };
@@ -1482,7 +1494,29 @@ window.closeExpenseModal = function() {
     document.getElementById("expenseAmount").value = "";
     document.getElementById("expenseDesc").value = "";
     document.getElementById("expenseCategory").value = "";
+    document.getElementById("editExpenseId").value = "";
   }
+};
+
+window.openEditExpenseModal = function(id) {
+  const tx = currentMonthExpenses.find(e => e._id === id);
+  if (!tx) return;
+
+  const modal = document.getElementById("expenseModal");
+  
+  document.getElementById("expenseAmount").value = tx.amount;
+  document.getElementById("expenseCategory").value = tx.category;
+  // Format date for input type="date" (YYYY-MM-DD)
+  document.getElementById("expenseDate").value = new Date(tx.date).toISOString().split('T')[0];
+  document.getElementById("expenseDesc").value = tx.description || "";
+  document.getElementById("editExpenseId").value = tx._id;
+  
+  document.getElementById("expenseModalTitle").innerText = "Edit Expense";
+  document.getElementById("expenseDate").disabled = false;
+  document.getElementById("expenseDate").style.cursor = "text";
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
 };
 
 window.saveExpense = async function() {
@@ -1490,6 +1524,7 @@ window.saveExpense = async function() {
   const category = document.getElementById("expenseCategory").value;
   const date = document.getElementById("expenseDate").value;
   const description = document.getElementById("expenseDesc").value;
+  const editId = document.getElementById("editExpenseId").value;
 
   if (!amount || !category || !date) {
     showToast("Amount and category are required", "error");
@@ -1497,9 +1532,18 @@ window.saveExpense = async function() {
   }
 
   try {
+    // 1. Create the new/updated expense
     await apiRequest("/expenses", "POST", { amount, category, date, description });
+    
+    // 2. If editing, delete the old one
+    if (editId) {
+      await apiRequest(`/expenses/${editId}`, "DELETE");
+      showToast("Expense updated successfully", "success");
+    } else {
+      showToast("Expense added successfully", "success");
+    }
+
     closeExpenseModal();
-    showToast("Expense added successfully", "success");
     loadMonthlyData(); // Refresh data
   } catch (err) {
     showToast(err.message, "error");
