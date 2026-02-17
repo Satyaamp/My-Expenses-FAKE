@@ -695,10 +695,24 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.log('Service Worker registration failed:', err));
+        .then(reg => {
+
+          reg.onupdatefound = () => {
+            const newWorker = reg.installing;
+
+            newWorker.onstatechange = () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                alert("🚀 New update installed. Refreshing...");
+                window.location.reload();
+              }
+            };
+          };
+
+        })
+        .catch(err => console.log('SW failed:', err));
     });
   }
+
 
   // Image Modal Logic
   const modal = document.getElementById("imageModal");
