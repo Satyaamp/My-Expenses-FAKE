@@ -46,7 +46,7 @@ window.confirmDelete = async function() {
   try {
     await apiRequest("/auth/me", "DELETE");
     localStorage.removeItem("token");
-    window.location.href = "index.html";
+    window.location.href = "/";
   } catch (err) {
     showToast(err.message, "error");
   }
