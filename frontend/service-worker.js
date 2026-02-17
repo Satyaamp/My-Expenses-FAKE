@@ -2,17 +2,17 @@
    DHANREKHA SERVICE WORKER
 ================================ */
 
-const CACHE_NAME = "dhanrekha-v11"; // 🔥 UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
+const CACHE_NAME = "dhanrekha-v12"; // 🔥 UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
 
 const STATIC_ASSETS = [
   "/",
-  "/index.html",
-  "/login.html",
-  "/signup.html",
-  "/dashboard.html",
-  "/monthly.html",
-  "/forgot-password.html",
-  "/reset-password.html",
+  "/login",
+  "/signup",
+  "/dashboard",
+  "/monthly",
+  "/yearly",
+  "/profile",
+  "/forgot-password",
 
   "/css/index.css",
   "/css/glass.css",
@@ -84,29 +84,34 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
+  const url = new URL(event.request.url);
 
-      return fetch(event.request)
-        .then(response => {
-          // Cache new successful responses
-          if (
-            response &&
-            response.status === 200 &&
-            response.type === "basic"
-          ) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return response;
+  // 1. Network First for HTML/Navigation (Ensures latest version)
+  if (event.request.mode === 'navigate' || url.pathname.indexOf('.') === -1) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, networkResponse.clone());
+            return networkResponse;
+          });
         })
         .catch(() => {
-          // Optional: offline fallback page
-          // return caches.match("/offline.html");
+          return caches.match(event.request); // Fallback to cache if offline
+        })
+    );
+  } else {
+    // 2. Cache First for Static Assets (Images, CSS, JS)
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, response.clone());
+            return response;
+          });
         });
-    })
-  );
+      })
+    );
+  }
 });

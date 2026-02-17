@@ -35,7 +35,7 @@ form.addEventListener("submit", async (e) => {
 
     showToast("Registration successful. Redirecting...", "success");
     setTimeout(() => {
-      window.location.href = "index.html";
+      window.location.href = "/";
     }, 1000);
   } catch (err) {
     // Also wait on error for consistent experience

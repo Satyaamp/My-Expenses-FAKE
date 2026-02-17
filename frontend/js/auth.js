@@ -31,7 +31,7 @@ form.addEventListener("submit", async (e) => {
     localStorage.setItem("token", res.data);
 
     // Redirect to dashboard
-    window.location.href = "dashboard.html";
+    window.location.href = "dashboard";
   } catch (err) {
     // Also wait on error for consistent experience
     const elapsed = Date.now() - startTime;

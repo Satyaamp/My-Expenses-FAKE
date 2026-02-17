@@ -11,6 +11,6 @@ if ("serviceWorker" in navigator) {
 if (localStorage.getItem("token")) {
   // Give browser time to detect PWA installability
   setTimeout(() => {
-    window.location.href = "dashboard.html";
+    window.location.href = "dashboard";
   }, 1500); // 🔥 Important delay
 }
