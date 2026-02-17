@@ -9,7 +9,6 @@ const router = express.Router();
 
 // 1. Forgot Password Route
 router.post('/forgot-password', async (req, res) => {
-  console.log("📩 Forgot password request for:", req.body.email);
   const { email } = req.body;
   let user; // Define user here so it's accessible in catch block
 
@@ -22,7 +21,6 @@ router.post('/forgot-password', async (req, res) => {
 
     // Check if a valid token already exists to prevent spam
     if (user.resetPasswordExpires && user.resetPasswordExpires > Date.now()) {
-      console.log("⚠️ Token already active for:", email);
       return res.status(429).json({ message: 'A reset link is already active. Please check your email or wait 5 minutes.' });
     }
 
@@ -86,7 +84,7 @@ router.post('/forgot-password', async (req, res) => {
     res.status(200).json({ message: 'Email sent successfully' });
 
   } catch (err) {
-    console.error("❌ Email Send Error:", err);
+    console.error("Email Send Error:", err.message);
 
     // If email fails, clear the token so the user can try again immediately
     if (user) {

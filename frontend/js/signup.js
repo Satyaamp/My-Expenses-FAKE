@@ -11,9 +11,15 @@ form.addEventListener("submit", async (e) => {
   const btn = document.getElementById("signupBtn");
   const originalText = btn.innerText;
 
+  // Ensure overlay is visible
+  const overlay = document.getElementById('validation-overlay');
+  if (overlay) overlay.style.display = 'flex';
+
+  const MIN_DELAY = 3000; // 3 seconds minimum
+  const startTime = Date.now();
+
   try {
     btn.disabled = true;
-    btn.innerHTML = 'Creating your space<span class="loading-dots"></span>';
 
     await apiRequest("/auth/register", "POST", {
       name,
@@ -21,11 +27,24 @@ form.addEventListener("submit", async (e) => {
       password
     });
 
+    // Wait for minimum delay
+    const elapsed = Date.now() - startTime;
+    if (elapsed < MIN_DELAY) {
+      await new Promise(resolve => setTimeout(resolve, MIN_DELAY - elapsed));
+    }
+
     showToast("Registration successful. Redirecting...", "success");
     setTimeout(() => {
       window.location.href = "index.html";
-    }, 2000);
+    }, 1000);
   } catch (err) {
+    // Also wait on error for consistent experience
+    const elapsed = Date.now() - startTime;
+    if (elapsed < MIN_DELAY) {
+      await new Promise(resolve => setTimeout(resolve, MIN_DELAY - elapsed));
+    }
+    
+    if (overlay) overlay.style.display = 'none';
     showToast(err.message, "error");
     btn.disabled = false;
     btn.innerText = originalText;

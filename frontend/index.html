@@ -693,8 +693,18 @@
   });
 
   if ('serviceWorker' in navigator) {
+    let refreshing = false;
+
+    // 🔥 Listen for the new service worker taking control
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
+      navigator.serviceWorker.register('service-worker.js')
         .then(reg => {
 
           reg.onupdatefound = () => {
@@ -702,8 +712,8 @@
 
             newWorker.onstatechange = () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                alert("🚀 New update installed. Refreshing...");
-                window.location.reload();
+                // Optional: Log or show a toast. The reload happens automatically via controllerchange above.
+                console.log("🚀 New update installed. Refreshing...");
               }
             };
           };
