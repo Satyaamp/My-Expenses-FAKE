@@ -36,7 +36,7 @@ router.post('/forgot-password', async (req, res) => {
     // Use 'origin' header to point back to Netlify if request came from there
     const clientUrl = req.headers.origin || `${req.headers['x-forwarded-proto'] || req.protocol}://${req.get('host')}`;
     
-    const resetUrl = `${clientUrl}/reset-password.html?token=${token}`;
+    const resetUrl = `${clientUrl}/reset-password?token=${token}`;
     const logoUrl = `${clientUrl}/assets/logo1.png`;
     const bannerUrl = `${clientUrl}/assets/banner.png`;
 
