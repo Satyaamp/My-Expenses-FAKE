@@ -132,6 +132,8 @@
         100% {background-position:100% 50%,0 calc(50% - var(--s)/16),0 calc(50% + var(--s)/16),50% calc(50% - var(--s)/16),50% calc(50% + var(--s)/16)}
     }
   </style>
+  <!-- Google Sign-In Script -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -173,6 +175,23 @@
 
       <button type="submit">Login</button>
     </form>
+
+    <!-- Google Login Button -->
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+      <div id="g_id_onload"
+           data-client_id="GOOGLE_CLIENT_ID_PLACEHOLDER"
+           data-callback="handleCredentialResponse"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="large"
+           data-theme="filled_black"
+           data-text="sign_in_with"
+           data-shape="rectangular"
+           data-logo_alignment="left">
+      </div>
+    </div>
 
     <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden;">
       <div onclick="toggleDemo()" style="padding: 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;">

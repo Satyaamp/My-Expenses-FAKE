@@ -42,3 +42,23 @@ form.addEventListener("submit", async (e) => {
     showToast(err.message, "error");
   }
 });
+
+/* ===============================
+   GOOGLE LOGIN HANDLER
+================================ */
+window.handleCredentialResponse = async function(response) {
+  try {
+    // Send the Google token to your backend
+    const res = await apiRequest("/auth/google", "POST", {
+      token: response.credential
+    });
+
+    // Save JWT from your backend
+    localStorage.setItem("token", res.token);
+
+    showToast("Google login successful!", "success");
+    setTimeout(() => window.location.href = "dashboard", 1000);
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+};

@@ -4,10 +4,46 @@ const protect = require('../middleware/auth.middleware');
 const limiter = require('../middleware/rateLimiter.middleware');
 const User = require('../models/user.model');
 const archiver = require('archiver'); // npm install archiver
+const { OAuth2Client } = require('google-auth-library');
+const jwt = require('jsonwebtoken');
 
 router.post('/register', limiter, ctrl.register);
 router.post('/login', limiter, ctrl.login);
 router.get('/me',protect , ctrl.me);
+
+// POST /google - Google Login
+router.post('/google', async (req, res) => {
+  try {
+    const { token } = req.body;
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const { name, email, picture } = ticket.getPayload();
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create new user with random password
+      const randomPassword = Math.random().toString(36).slice(-8) + "1Aa!"; 
+      user = await User.create({
+        name,
+        email,
+        password: randomPassword,
+        avatar: picture
+      });
+    }
+
+    const jwtToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.status(200).json({ token: jwtToken, message: "Login successful" });
+  } catch (err) {
+    console.error("Google Login Error:", err);
+    res.status(400).json({ message: 'Google login failed' });
+  }
+});
 
 // GET /export - Download all user data (Expenses & Income)
 router.get("/export", protect, async (req, res) => {
