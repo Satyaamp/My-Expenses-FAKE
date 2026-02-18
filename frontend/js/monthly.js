@@ -1481,6 +1481,12 @@ window.openAddExpenseModal = function(dateStr) {
     modal.classList.remove("hidden");
     document.getElementById("expenseModalTitle").innerText = "Add Expense";
     document.getElementById("editExpenseId").value = "";
+    
+    // Reset fields for Add (Enable all except date which is locked to selection)
+    document.getElementById("expenseCategory").disabled = false;
+    document.getElementById("expenseDesc").disabled = false;
+    dateInput.disabled = true; 
+    
     document.body.classList.add("modal-open");
   }
 };
@@ -1512,8 +1518,12 @@ window.openEditExpenseModal = function(id) {
   document.getElementById("editExpenseId").value = tx._id;
   
   document.getElementById("expenseModalTitle").innerText = "Edit Expense";
-  document.getElementById("expenseDate").disabled = false;
-  document.getElementById("expenseDate").style.cursor = "text";
+  
+  // Edit Mode: Only Amount Editable
+  document.getElementById("expenseCategory").disabled = true;
+  document.getElementById("expenseDate").disabled = true;
+  document.getElementById("expenseDesc").disabled = true;
+  document.getElementById("expenseDate").style.cursor = "not-allowed";
 
   modal.classList.remove("hidden");
   document.body.classList.add("modal-open");

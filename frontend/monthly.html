@@ -948,6 +948,8 @@
     dateInput.value = valStr;
     
     dateInput.disabled = false; // Enable for editing
+    document.getElementById("expenseCategory").disabled = false;
+    document.getElementById("expenseDesc").disabled = false;
     document.getElementById('expenseModalTitle').innerText = "Add Expense";
     document.getElementById('editExpenseId').value = "";
     dateInput.style.cursor = 'text';
