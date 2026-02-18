@@ -13,15 +13,7 @@ app.use(require('express').static(path.join(__dirname, '../frontend')));
 // ✅ Clean URL Routes (Serve HTML without extension)
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
 
-// Inject Google Client ID for Login Page
-app.get('/login', (req, res) => {
-  const filePath = path.join(__dirname, '../frontend/login.html');
-  fs.readFile(filePath, 'utf8', (err, html) => {
-    if (err) return res.status(500).send('Error loading login page');
-    const injectedHtml = html.replace('GOOGLE_CLIENT_ID_PLACEHOLDER', process.env.GOOGLE_CLIENT_ID || '');
-    res.send(injectedHtml);
-  });
-});
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../frontend/login.html')));
 
 app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, '../frontend/signup.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dashboard.html')));
