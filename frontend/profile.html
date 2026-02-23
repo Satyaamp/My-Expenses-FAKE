@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="css/glass.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
   
+  
   <style>
     /* Override dashboard.css body padding on mobile since Profile page lacks the secondary header */
     @media (max-width: 768px) {
@@ -336,6 +337,7 @@
       font-weight: 600;
       transition: background 0.2s;
     }
+
     .delete-btn:hover {
       background: #DC2626;
     }
@@ -536,6 +538,7 @@
         <div class="profile-avatar">
           <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
+        
         <h2 class="profile-name" id="profileName">User</h2>
         <p class="profile-email" id="profileEmail">loading...</p>
         <p id="profileJoined" style="font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-bottom: 15px;"></p>
@@ -551,6 +554,8 @@
             Delete
           </button>
         </div>
+        
+        <p id="appVersionDisplay" style=" font-size: 0.8rem; margin-top: 30px; text-align: center;"></p>
       </div>
       
       <div class="right-column-content">
@@ -560,6 +565,7 @@
         </button>
       </div>
 
+     
       <!-- Fintech Stats Section -->
       <div class="stats-grid">
         <div class="stat-card" style="--accent-color: #ef4444;">
@@ -626,7 +632,7 @@
         <div id="activityTimeline" class="timeline-list"></div>
       </div>
       </div>
-      <p style="opacity: 0.3; font-size: 0.8rem; margin-top: 30px; text-align: center;">App Version: v1.0.13</p>
+      
 
     </div>
   </main>
@@ -659,11 +665,13 @@
   <script>
     function logout() {
       localStorage.removeItem("token");
-      window.location.href = "/";
+      window.location.href = "/login";
     }
   </script>
   <script type="module">
-    import { apiRequest } from './js/api.js';
+    import { apiRequest, APP_VERSION } from './js/api.js';
+    
+    document.getElementById('appVersionDisplay').innerText = `App Version: ${APP_VERSION}`;
 
     async function loadProfileStats() {
       const btn = document.getElementById('refreshStatsBtn');

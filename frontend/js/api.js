@@ -2,6 +2,9 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
   ? "http://localhost:5000/api"
   : "https://my-expenses-fake.onrender.com/api";
 
+
+export const APP_VERSION = "v1.0.17";
+
 // Inject Global Loader CSS
 const loaderStyle = document.createElement('style');
 loaderStyle.textContent = `

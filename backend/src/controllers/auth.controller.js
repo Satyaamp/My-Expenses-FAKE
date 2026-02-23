@@ -1,6 +1,7 @@
 const authService = require('../services/auth.service');
 const { success } = require('../utils/response.util');
 
+// Register Route
 exports.register = async (req, res, next) => {
   try {
     const user = await authService.register(req.body);
@@ -10,6 +11,7 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// Login Route
 exports.login = async (req, res, next) => {
   try {
     const user = await authService.login(
@@ -22,6 +24,7 @@ exports.login = async (req, res, next) => {
   }
 };
 
+// Profile Route
 exports.me = async (req, res, next) => {
   try {
     const user = await authService.getMe(req.user.id);
