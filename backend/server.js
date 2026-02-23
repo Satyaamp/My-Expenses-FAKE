@@ -22,6 +22,7 @@ app.get('/yearly', (req, res) => res.sendFile(path.join(__dirname, '../frontend/
 app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../frontend/profile.html')));
 app.get('/forgot-password', (req, res) => res.sendFile(path.join(__dirname, '../frontend/forgot-password.html')));
 app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, '../frontend/reset-password.html')));
+app.get('/sitemap', (req, res) => res.sendFile(path.join(__dirname, '../frontend/sitemap.html')));
 
 // 404 Fallback for unknown routes
 app.get(/.*/, (req, res) => {

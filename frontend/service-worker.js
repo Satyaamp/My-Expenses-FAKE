@@ -2,7 +2,7 @@
    DHANREKHA SERVICE WORKER
 ================================ */
 
-const CACHE_NAME = "dhanrekha-v17"; // 🔥 UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
+const CACHE_NAME = "dhanrekha-v18"; // 🔥 UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
 
 const STATIC_ASSETS = [
   "/",
