@@ -21,6 +21,7 @@ const monthTxCount = document.getElementById("monthTxCount");
 const downloadPdfBtn = document.getElementById("downloadPdfBtn");
 
 let currentMonthExpenses = [];
+let currentMonthIncomes = [];
 let currentMonthCategories = [];
 let dailyChart = null;
 let cumulativeChart = null;
@@ -28,6 +29,14 @@ let categoryPieChart = null;
 let currentSlide = 0;
 let modalCurrentYear = new Date().getFullYear();
 let currentMonth = "";
+
+// for mobile screen only
+let currentExpensePage = 1;
+const EXPENSES_PER_PAGE = 3;
+
+// for desktop screen only
+let currentSelectPage = 1;
+const SELECT_PER_PAGE = 2;
 
 /* ===============================
    INIT
@@ -423,8 +432,16 @@ function renderCategoryPie(categories) {
    DATE-WISE DATA
 ================================ */
 async function loadDateWiseExpenses(month, year) {
+  // 1. Fetch Expenses
   const res = await apiRequest(`/expenses/month?month=${month}&year=${year}`);
   currentMonthExpenses = res.data;
+
+  // 2. Fetch Income for the same period
+  const lastDay = new Date(year, month, 0).getDate();
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+  const incRes = await apiRequest(`/income?startDate=${startDate}&endDate=${endDate}`);
+  currentMonthIncomes = incRes.data || [];
 
   // Update Transaction Count with Animation
   if (monthTxCount) {
@@ -458,14 +475,16 @@ function setupMobileDaySearch() {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${month}-${String(d).padStart(2, "0")}`;
-    const hasTx = getTransactionsForDate(dateStr).length > 0;
+    const tx = getTransactionsForDate(dateStr);
+    const hasTx = tx.length > 0;
+    const hasIncome = tx.some(t => t.type === 'income');
 
     // Check if date is in the future
     const checkDate = new Date(Number(year), Number(month) - 1, d);
     const isFuture = checkDate > today;
 
     const bubble = document.createElement("div");
-    bubble.className = `day-bubble ${hasTx ? "has-data" : ""} ${isFuture ? "disabled" : ""}`;
+    bubble.className = `day-bubble ${hasTx ? "has-data" : ""} ${hasIncome ? "has-income" : ""} ${isFuture ? "disabled" : ""}`;
     bubble.dataset.day = d;
     bubble.innerHTML = `
       <span class="day-num">${d}</span>
@@ -525,11 +544,19 @@ function autoSelectDay(year, month) {
   }
 }
 
+/* ===============================
+   MOBILE TRANSACTIONS
+================================ */
+
 function renderMobileTransactions(dateStr) {
   const tx = getTransactionsForDate(dateStr);
   const isToday = dateStr === new Date().toISOString().split('T')[0];
+
+  const incomes = tx.filter(t => t.type === 'income');
+  const expenses = tx.filter(t => t.type === 'expense');
   
-  const totalAmount = tx.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalIncome = incomes.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpense = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
   const dateText = new Date(dateStr).toDateString();
 
   let html = "";
@@ -537,47 +564,144 @@ function renderMobileTransactions(dateStr) {
   html += `
     <div class="day-header-card">
       <div class="day-header-date">${dateText}</div>
-      <div class="day-header-summary">${tx.length} Txns • Total: ₹${totalAmount}</div>
+      <div class="day-header-summary">
+        ${incomes.length > 0 ? `<span style="color:#4ade80; margin-right:8px;">₹${totalIncome}</span>` : ''}
+        
+      </div>
+      
     </div>
   `;
 
   // Dynamic Add Button for Today
   if (isToday) {
-    html += `<button onclick="openAddExpenseModal('${dateStr}')" class="add-tx-btn">➕ Add Transaction</button>`;
+    html += `
+    <div class="today-action-row">
+
+      <button 
+        onclick="openAddExpenseModal('${dateStr}')"
+        class="add-expense-btn"
+      >
+        ➕ Today Expense
+      </button>
+
+      <span class="today-expense-badge">
+        ₹${totalExpense}
+      </span>
+
+    </div>`;
   }
 
-  if (!tx.length) {
-    html += `<p class="text-muted">No transactions found for this date.</p>`;
-  } else {
-    html += tx.map(t => `
-      <div class="transaction-item">
-        <div class="transaction-top">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="transaction-amount expense">-₹${t.amount}</span>
-            <span class="transaction-category">${t.category}</span>
-          </div>
-          <div class="tx-actions">
-            <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
-            <button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>
-          </div>
+    if (!tx.length) {
+      html += `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No transactions</div>
+          <div class="empty-sub">Start by adding your first expense.</div><br>
+          <button class="add-expense-btn" onclick="openAddExpenseModal('${dateStr}')">
+            ➕ Add Expense
+          </button>
         </div>
-        <div class="transaction-description">
-          ${t.description || "No description"}
-        </div>
-      </div>
-    `).join("");
+      `;
+    } else {
+    // Render Income Section
+    if (incomes.length > 0) {
+      // html += `<div class="section-header" style="color:#4ade80">Income</div>`;
+      // html += incomes.map(t => renderTxItemHTML(t)).join("");
+    }
+
+    // Render Expense Section
+    if (expenses.length > 0) {
+
+      const totalPages = Math.ceil(expenses.length / EXPENSES_PER_PAGE);
+
+      const start = (currentExpensePage - 1) * EXPENSES_PER_PAGE;
+      const end = start + EXPENSES_PER_PAGE;
+
+      const paginatedExpenses = expenses.slice(start, end);
+
+      html += paginatedExpenses.map(t => renderTxItemHTML(t)).join("");
+
+      // Show pagination 
+      if (totalPages > 1) {
+        html += `
+          <div class="expense-pagination">
+
+            <button 
+              class="expense-page-btn"
+              onclick="changeExpensePage(-1, '${dateStr}')"
+              ${currentExpensePage === 1 ? "disabled" : ""}
+            >
+              ◀
+            </button>
+
+            <span class="expense-page-info">
+              ${currentExpensePage} / ${totalPages}
+            </span>
+
+            <button 
+              class="expense-page-btn"
+              onclick="changeExpensePage(1, '${dateStr}')"
+              ${currentExpensePage === totalPages ? "disabled" : ""}
+            >
+              ▶
+            </button>
+
+          </div>
+        `;
+      }
+    }
   }
 
   mobileListContainer.innerHTML = html;
+}
+
+
+
+
+window.changeExpensePage = function(direction, dateStr) {
+  currentExpensePage += direction;
+
+  if (currentExpensePage < 1) currentExpensePage = 1;
+
+  renderMobileTransactions(dateStr);
+}
+
+/* Helper to render individual transaction item HTML */
+function renderTxItemHTML(t) {
+  return `
+    <div class="transaction-item" ${t.type === 'expense' ? `draggable="true" ondragstart="window.handleDragStart(event, '${t._id}')"` : ''}>
+      <div class="transaction-top">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="transaction-amount ${t.type === 'income' ? 'income' : 'expense'}" style="${t.type === 'income' ? 'color:#22c55e;' : ''}">
+            ${t.type === 'income' ? '+' : '-'}₹${t.amount}
+          </span>
+          <span class="transaction-category">${t.category || t.source}</span>
+        </div>
+        <div class="tx-actions">
+          ${t.type === 'expense' ? `<button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>` : ''}
+          ${t.type === 'expense' ? `<button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>` : ''}
+        </div>
+      </div>
+      <div class="transaction-description">
+        ${t.description || (t.type === 'income' ? 'Income Record' : "No description")}
+      </div>
+    </div>
+  `;
 }
 
 /* ===============================
    UTILITIES
 ================================ */
 function getTransactionsForDate(dateStr) {
-  return currentMonthExpenses.filter(e =>
+  const exps = currentMonthExpenses.filter(e =>
     new Date(e.date).toISOString().split("T")[0] === dateStr
-  );
+  ).map(e => ({ ...e, type: 'expense' }));
+
+  const incs = currentMonthIncomes.filter(i =>
+    new Date(i.date).toISOString().split("T")[0] === dateStr
+  ).map(i => ({ ...i, type: 'income', category: i.source }));
+
+  return [...exps, ...incs];
 }
 
 /* ===============================
@@ -601,14 +725,17 @@ function renderCalendar(year, month) {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const txCount = getTransactionsForDate(dateStr).length;
-    const hasTx = txCount > 0;
+    const tx = getTransactionsForDate(dateStr);
+    const hasTx = tx.length > 0;
+    const hasIncome = tx.some(t => t.type === 'income');
+    
     const disabled = new Date(year,month,d) > today ? "disabled" : "";
     const isDesktop = window.innerWidth > 768;
 
     html += `
       <div class="calendar-day 
         ${hasTx ? "day-has-tx" : "day-no-tx"} 
+        ${hasIncome ? "day-has-income" : ""}
         ${disabled}"
         data-date="${dateStr}"
         ${isDesktop && !disabled ? `ondragover="window.allowDrop(event)" ondragleave="window.handleDragLeave(event)" ondrop="window.handleDrop(event)"` : ''}
@@ -656,43 +783,104 @@ function selectDate(dateStr, cell) {
   const list = document.getElementById("transactionsList");
   const tx = getTransactionsForDate(dateStr);
 
-  const totalAmount = tx.reduce((sum, t) => sum + Number(t.amount), 0);
+  const incomes = tx.filter(t => t.type === 'income');
+  const expenses = tx.filter(t => t.type === 'expense');
+
+  const totalIncome = incomes.reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpense = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
+
   const dateText = new Date(dateStr).toDateString();
   const badgeStyle = "margin-left: 10px; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.3); color: #fef9c3; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; vertical-align: middle;";
-  document.getElementById("selectedDateTitle").innerHTML = `${dateText} <span style="${badgeStyle}">${tx.length} Txns</span> <span style="${badgeStyle}">Total: ₹${totalAmount}</span>`;
+  
+  document.getElementById("selectedDateTitle").innerHTML = `${dateText} <span style="${badgeStyle}">Exp: ₹${totalExpense}</span> ${incomes.length > 0 ? `<span style="${badgeStyle}; color:#4ade80; border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.15);">Inc: ₹${totalIncome}</span>` : ''}`;
 
   const isToday = dateStr === new Date().toISOString().split('T')[0];
   let html = "";
 
   if (isToday) {
-    html += `<button onclick="openAddExpenseModal('${dateStr}')" class="add-tx-btn">➕ Add Transaction</button>`;
+    html += `
+      <div class="today-action">
+        <button 
+          onclick="openAddExpenseModal('${dateStr}')"
+          class="add-expense-btn"
+        >
+          ➕ Today Expense
+        </button>
+      </div>
+    `;
   }
 
-  if (!tx.length) {
-    html += `<div class="empty-state"><p>📭</p><p>No transactions</p></div>`;
-  } else {
-    html += tx.map(t => `
-      <div class="transaction-item" draggable="true" ondragstart="window.handleDragStart(event, '${t._id}')">
-        <div class="transaction-top">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span class="transaction-amount expense">-₹${t.amount}</span>
-            <span class="transaction-category">${t.category}</span>
-          </div>
-          
-          <div class="tx-actions">
-            <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
-            <button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>
-          </div>
+    if (!tx.length) {
+      html += `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No transactions</div>
+          <div class="empty-sub">Start by adding your first expense.</div><br>
+          <button class="add-expense-btn" onclick="openAddExpenseModal('${dateStr}')">
+            ➕ Add Expense
+          </button>
         </div>
-        <div class="transaction-description">
-          ${t.description || "No description"}
-        </div>
-      </div>
-    `).join("");
+      `;
+    }  else {
+    // Render Income Section
+    if (incomes.length > 0) {
+      // html += `<div class="section-header" style="color:#4ade80">Income</div>`;
+      // html += incomes.map(t => renderTxItemHTML(t)).join("");
+    }
+
+    // Render Expense Section
+    if (expenses.length > 0) {
+
+      const totalPages = Math.ceil(expenses.length / SELECT_PER_PAGE);
+
+      const start = (currentSelectPage - 1) * SELECT_PER_PAGE;
+      const end = start + SELECT_PER_PAGE;
+
+      const paginatedExpenses = expenses.slice(start, end);
+
+      html += paginatedExpenses.map(t => renderTxItemHTML(t)).join("");
+
+      if (totalPages > 1) {
+        html += `
+          <div class="pagination-wrapper">
+
+            <button 
+              class="pagination-btn"
+              onclick="changeSelectPage(-1, '${dateStr}')"
+              ${currentSelectPage === 1 ? "disabled" : ""}
+            >
+              ◀
+            </button>
+
+            <span class="pagination-info">
+              ${currentSelectPage} / ${totalPages}
+            </span>
+
+            <button 
+              class="pagination-btn"
+              onclick="changeSelectPage(1, '${dateStr}')"
+              ${currentSelectPage === totalPages ? "disabled" : ""}
+            >
+              ▶
+            </button>
+
+          </div>
+        `;
+      }
+    }
   }
 
   list.innerHTML = html;
 }
+
+
+window.changeSelectPage = function(direction, dateStr) {
+  currentSelectPage += direction;
+
+  if (currentSelectPage < 1) currentSelectPage = 1;
+
+  selectDate(dateStr, document.querySelector(".calendar-day.selected"));
+};
 
 /* ===============================
    MOBILE MONTH SWIPE
@@ -1612,6 +1800,50 @@ window.closeExpenseModal = function() {
     document.getElementById("expenseDesc").value = "";
     document.getElementById("expenseCategory").value = "";
     document.getElementById("editExpenseId").value = "";
+  }
+};
+
+/* ===============================
+   ADD INCOME LOGIC
+================================ */
+window.openAddIncomeModal = function(dateStr) {
+  const modal = document.getElementById("incomeModal");
+  const dateInput = document.getElementById("incomeDate");
+  
+  if(modal && dateInput) {
+    dateInput.value = dateStr;
+    modal.classList.remove("hidden");
+    document.body.classList.add("modal-open");
+  }
+};
+
+window.closeIncomeModal = function() {
+  const modal = document.getElementById("incomeModal");
+  if(modal) {
+    modal.classList.add("hidden");
+    document.body.classList.remove("modal-open");
+    document.getElementById("incomeAmount").value = "";
+    document.getElementById("incomeSource").value = "";
+  }
+};
+
+window.saveIncome = async function() {
+  const amount = document.getElementById("incomeAmount").value;
+  const source = document.getElementById("incomeSource").value;
+  const date = document.getElementById("incomeDate").value;
+
+  if (!amount || !date) {
+    showToast("Amount and date are required", "error");
+    return;
+  }
+
+  try {
+    await apiRequest("/income", "POST", { amount, source, date });
+    showToast("Income added successfully", "success");
+    closeIncomeModal();
+    loadMonthlyData();
+  } catch (err) {
+    showToast(err.message, "error");
   }
 };
 
