@@ -574,6 +574,26 @@
     }
     /* Ensure side positioning */
     .transaction-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+
+    /* =========================================
+       CATEGORY EXPANSION STYLES
+    ========================================= */
+    .histogram-item {
+      transition: background 0.2s;
+      border-radius: 8px;
+      padding: 8px; /* Added padding for better click area */
+      margin-bottom: 8px; /* Spacing between items */
+    }
+    .histogram-item:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    .category-tx-list {
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>

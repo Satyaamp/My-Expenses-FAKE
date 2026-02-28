@@ -1,8 +1,4 @@
-/* ================================
-   DHANREKHA SERVICE WORKER
-================================ */
-
-const CACHE_NAME = "dhanrekha-v18"; // 🔥 UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
+const CACHE_NAME = "dhanrekha-v19"; // UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
 
 const STATIC_ASSETS = [
   "/",
@@ -30,7 +26,7 @@ const STATIC_ASSETS = [
   "/assets/logo1.png",
   "/assets/banner.png",
 
-  // 🔥 ICONS (IMPORTANT FOR PWA INSTALL)
+  //ICONS (IMPORTANT FOR PWA INSTALL)
   "/assets/icons/icon-72.png",
   "/assets/icons/icon-96.png",
   "/assets/icons/icon-128.png",
@@ -45,14 +41,14 @@ const STATIC_ASSETS = [
    INSTALL
 ================================ */
 self.addEventListener("install", event => {
-  console.log("📦 Service Worker installing...");
+  console.log("Service Worker installing...");
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log("📁 Caching static assets");
+      console.log("Caching static assets");
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  self.skipWaiting(); // 🔥 force activate
+  self.skipWaiting(); // force activate
 });
 
 /* ================================
@@ -62,7 +58,7 @@ self.addEventListener("activate", event => {
   console.log("🚀 Service Worker activating...");
   event.waitUntil(
     Promise.all([
-      // 🔥 Delete old caches
+      // Delete old caches
       caches.keys().then(keys =>
         Promise.all(
           keys.map(key => {
@@ -73,7 +69,7 @@ self.addEventListener("activate", event => {
           })
         )
       ),
-      self.clients.claim() // 🔥 take control immediately
+      self.clients.claim() // take control immediately
     ])
   );
 });

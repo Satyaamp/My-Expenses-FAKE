@@ -221,10 +221,11 @@ function renderExpenseHistogram(categories) {
 
     const item = document.createElement("div");
     item.className = "histogram-item";
+    item.style.cursor = "pointer"; // Indicate clickable
 
     item.innerHTML = `
       <div class="histogram-header">
-        <span class="category-name">${cat.category}</span>
+        <span class="category-name">${cat.category} <span style="font-size:0.7em; opacity:0.5; margin-left:4px;">▼</span></span>
         <span class="category-value">
           ₹${cat.total}
           <span class="category-percent">${percent}%</span>
@@ -241,10 +242,108 @@ function renderExpenseHistogram(categories) {
       <div class="histogram-count">
         ${cat.count} transaction${cat.count !== 1 ? "s" : ""}
       </div>
+      
+      <!-- Hidden Transaction List Container -->
+      <div class="category-tx-list" id="cat-tx-${index}" style="display: none; margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 5px 10px;"></div>
     `;
+
+    // Add Click Event to Expand/Collapse
+    item.addEventListener('click', (e) => {
+      // Prevent closing if clicking inside the list itself (e.g. if we add buttons later)
+      if (e.target.closest('.category-tx-list')) return;
+
+      const list = document.getElementById(`cat-tx-${index}`);
+      const isHidden = list.style.display === "none";
+
+      // Optional: Close other open categories for cleaner UI
+      document.querySelectorAll('.category-tx-list').forEach(el => el.style.display = 'none');
+
+      if (isHidden) {
+        list.style.display = "block";
+        
+        // Filter transactions for this category from the global currentMonthExpenses
+        const txs = currentMonthExpenses.filter(tx => tx.category === cat.category);
+        // Sort by date descending (newest first)
+        txs.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (txs.length === 0) {
+           list.innerHTML = `<div style="padding: 10px; text-align: center; opacity: 0.6; font-size: 0.85rem;">No transactions loaded yet.</div>`;
+        } else {
+           // Sort by date descending (newest first)
+           txs.sort((a, b) => new Date(b.date) - new Date(a.date));
+           
+           list.innerHTML = txs.map(t => `
+             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+               <div>
+                 <div style="font-size: 0.9rem; color: #fff;">${new Date(t.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</div>
+                 <div style="font-size: 0.8rem; opacity: 0.6;">${t.description || 'No description'}</div>
+               </div>
+               <div style="font-weight: 600; color: #ef4444;">₹${t.amount}</div>
+             </div>
+           `).join('');
+        }
+        renderPaginatedList(list, txs, 1);
+      } else {
+        list.style.display = "none";
+      }
+    });
 
     container.appendChild(item);
   });
+}
+
+function renderPaginatedList(container, txs, page) {
+  const pageSize = 4;
+  const totalPages = Math.ceil(txs.length / pageSize);
+
+  if (txs.length === 0) {
+    container.innerHTML = `<div style="padding: 10px; text-align: center; opacity: 0.6; font-size: 0.85rem;">No transactions loaded yet.</div>`;
+    return;
+  }
+
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const pageTxs = txs.slice(start, end);
+
+  let html = pageTxs.map(t => `
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <div>
+        <div style="font-size: 0.9rem; color: #fff;">${new Date(t.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</div>
+        <div style="font-size: 0.8rem; opacity: 0.6;">${t.description || 'No description'}</div>
+      </div>
+      <div style="font-weight: 600; color: #ef4444;">₹${t.amount}</div>
+    </div>
+  `).join('');
+
+  if (totalPages > 1) {
+    html += `
+      <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <button class="pg-btn prev" ${page === 1 ? 'disabled style="opacity:0.3; cursor:default;"' : ''} style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem; padding: 0 10px;">❮</button>
+        <span style="font-size: 0.8rem; opacity: 0.8;">Page ${page} of ${totalPages}</span>
+        <button class="pg-btn next" ${page === totalPages ? 'disabled style="opacity:0.3; cursor:default;"' : ''} style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem; padding: 0 10px;">❯</button>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  if (totalPages > 1) {
+    const prevBtn = container.querySelector('.pg-btn.prev');
+    const nextBtn = container.querySelector('.pg-btn.next');
+    
+    if (prevBtn && !prevBtn.disabled) {
+      prevBtn.onclick = (e) => {
+        e.stopPropagation();
+        renderPaginatedList(container, txs, page - 1);
+      };
+    }
+    if (nextBtn && !nextBtn.disabled) {
+      nextBtn.onclick = (e) => {
+        e.stopPropagation();
+        renderPaginatedList(container, txs, page + 1);
+      };
+    }
+  }
 }
 
 /* ===============================
@@ -287,13 +386,14 @@ function renderCategoryPie(categories) {
   ];
 
   categoryPieChart = new Chart(ctx, {
-    type: "doughnut",
+    type: "pie",
     data: {
       labels: labels,
       datasets: [{
         data: data,
         backgroundColor: colors,
-        borderWidth: 0,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.1)",
         hoverOffset: 10
       }]
     },
@@ -306,8 +406,13 @@ function renderCategoryPie(categories) {
       },
       plugins: {
         legend: {
-          position: "right",
-          labels: { color: "#fff", boxWidth: 12, font: { size: 11 } }
+          position: "bottom",
+          labels: { color: "#fff", boxWidth: 12, font: { size: 11 }, padding: 20 }
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => ` ${context.label}: ₹${context.raw}`
+          }
         }
       }
     }
