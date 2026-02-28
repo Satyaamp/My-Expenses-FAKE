@@ -3,7 +3,7 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
   : "https://my-expenses-fake.onrender.com/api";
 
 
-export const APP_VERSION = "v1.0.17";
+export const APP_VERSION = "v1.0.18";
 
 // Inject Global Loader CSS
 const loaderStyle = document.createElement('style');

@@ -244,7 +244,7 @@ function renderExpenseHistogram(categories) {
       </div>
       
       <!-- Hidden Transaction List Container -->
-      <div class="category-tx-list" id="cat-tx-${index}" style="display: none; margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 5px 10px;"></div>
+      <div class="category-tx-list" id="cat-tx-${index}" style="display: none; margin-top: 12px; background: rgba(68, 40, 94, 0.38); border-radius: 8px; padding: 5px 10px;"></div>
     `;
 
     // Add Click Event to Expand/Collapse
@@ -278,7 +278,7 @@ function renderExpenseHistogram(categories) {
                  <div style="font-size: 0.9rem; color: #fff;">${new Date(t.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</div>
                  <div style="font-size: 0.8rem; opacity: 0.6;">${t.description || 'No description'}</div>
                </div>
-               <div style="font-weight: 600; color: #ef4444;">₹${t.amount}</div>
+               <div style="font-weight: 600; color: #ff0000;">₹${t.amount}</div>
              </div>
            `).join('');
         }
