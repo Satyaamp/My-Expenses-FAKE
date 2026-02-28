@@ -18,6 +18,7 @@ const monthSelectModal = document.getElementById("monthSelectModal");
 const modalYearDisplay = document.getElementById("modalYearDisplay");
 const modalMonthGrid = document.getElementById("modalMonthGrid");
 const monthTxCount = document.getElementById("monthTxCount");
+const monthTxCountMobile = document.getElementById("monthTxCountMobile");
 const downloadPdfBtn = document.getElementById("downloadPdfBtn");
 
 let currentMonthExpenses = [];
@@ -454,6 +455,10 @@ async function loadDateWiseExpenses(month, year) {
     monthTxCount.innerHTML = `<span>📊</span> ${currentMonthExpenses.length} Txns`;
     setTimeout(() => monthTxCount.style.transform = "scale(1)", 200);
   }
+  
+  if (monthTxCountMobile) {
+    monthTxCountMobile.innerHTML = `<span class="daily-avg-badge" style="margin-top: 4px;">${currentMonthExpenses.length} Txns</span>`;
+  }
 
   renderCalendar(+year, +month - 1);
   renderDailyChart(currentMonthExpenses, +year, +month);
@@ -555,7 +560,7 @@ function autoSelectDay(year, month) {
 
 function renderMobileTransactions(dateStr) {
   const tx = getTransactionsForDate(dateStr);
-  const isToday = dateStr === new Date().toISOString().split('T')[0];
+  // const isToday = dateStr === new Date().toISOString().split('T')[0];
 
   const incomes = tx.filter(t => t.type === 'income');
   const expenses = tx.filter(t => t.type === 'expense');
@@ -567,7 +572,36 @@ function renderMobileTransactions(dateStr) {
   let html = "";
 
   html += `
-    <div class="day-header-card">
+    <div class="day-header-card" style="position: relative;">
+
+      <button 
+        onclick="event.stopPropagation(); openEmptyStateModal()" 
+        title="Add Expense"
+        style="
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: rgba(11, 246, 86, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: rgb(19, 235, 203);
+          padding: 0;
+          transition: background 0.2s ease;
+        "
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
 
       <div class="day-header-date">
         ${dateText}
@@ -611,10 +645,18 @@ function renderMobileTransactions(dateStr) {
         <div class="empty-state">
           <div class="empty-icon">📭</div>
           <div class="empty-title">No transactions</div>
-          <div class="empty-sub">Start by adding your first expense.</div><br>
-          <button class="add-expense-btn" onclick="openAddExpenseModal('${dateStr}')">
-            ➕ Add Expense
-          </button>
+          <div class="empty-sub">
+            Start by adding your expense by clicking the green plus icon above <br>
+            <span style="display:inline-flex; vertical-align:middle; margin:0 4px; color:#13ebcb;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </span>
+          </div>
+
         </div>
       `;
     } else {
@@ -769,8 +811,9 @@ function renderCalendar(year, month) {
       </div>
       <div class="transactions-list" id="transactionsList">
         <div class="empty-state">
-          <p>📅</p>
-          <p>Select a date</p>
+          <div class="empty-icon">📭</div>
+          <div class="empty-title">No transactions</div>
+          <div class="empty-sub">Start by adding your expense.</div><br>
         </div>
       </div>
     </div>
@@ -804,36 +847,93 @@ function selectDate(dateStr, cell) {
   const totalIncome = incomes.reduce((sum, t) => sum + Number(t.amount), 0);
   const totalExpense = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
 
-  const dateText = new Date(dateStr).toDateString();
-  const badgeStyle = "margin-left: 10px; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.3); color: #fef9c3; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; vertical-align: middle;";
-  
-  document.getElementById("selectedDateTitle").innerHTML = `${dateText} <span style="${badgeStyle}">Exp: ₹${formatINR(totalExpense)}</span> ${incomes.length > 0 ? `<span style="${badgeStyle}; color:#4ade80; border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.15);">Inc: ₹${formatINR(totalIncome)}</span>` : ''}`;
+  const dateText = dateStr 
+  ? new Date(dateStr).toDateString()
+  : "Select Date";
 
-  const isToday = dateStr === new Date().toISOString().split('T')[0];
-  let html = "";
+  const badgeStyle = `
+    margin-left: 10px;
+    background: rgba(250, 204, 21, 0.15);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    color: #fef9c3;
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    vertical-align: middle;
+  `;
 
-  if (isToday) {
-    html += `
-      <div class="today-action">
-        <button 
-          onclick="openAddExpenseModal('${dateStr}')"
-          class="add-expense-btn"
-        >
-          ➕ Today Expense
-        </button>
+  document.getElementById("selectedDateTitle").innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+
+      <div>
+        ${dateText}
+
+        <span style="${badgeStyle}">
+          Exp: ₹${formatINR(totalExpense)}
+        </span>
+
+        ${incomes.length > 0 ? `
+          <span style="
+            ${badgeStyle};
+            color:#4ade80;
+            border-color:rgba(34,197,94,0.3);
+            background:rgba(34,197,94,0.15);
+          ">
+            Inc: ₹${formatINR(totalIncome)}
+          </span>
+        ` : ''}
       </div>
-    `;
-  }
+
+      <button 
+        onclick="event.stopPropagation(); openEmptyStateModal()" 
+        title="Add Expense"
+        style="
+          background: rgba(11, 246, 86, 0.4);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: rgb(19, 235, 203);
+          padding: 0;
+          transition: background 0.2s;
+        "
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+
+    </div>
+  `;
+  // const isToday = dateStr === new Date().toISOString().split('T')[0];
+  // let html = "";
+
+  // if (isToday) {
+  //   html += `
+  //     <div class="today-action">
+  //       <button 
+  //         onclick="openAddExpenseModal('${dateStr}')"
+  //         class="add-expense-btn"
+  //       >
+  //         ➕ Today Expense
+  //       </button>
+  //     </div>
+  //   `;
+  // }
 
     if (!tx.length) {
       html += `
         <div class="empty-state">
           <div class="empty-icon">📭</div>
           <div class="empty-title">No transactions</div>
-          <div class="empty-sub">Start by adding your first expense.</div><br>
-          <button class="add-expense-btn" onclick="openAddExpenseModal('${dateStr}')">
-            ➕ Add Expense
-          </button>
+          <div class="empty-sub">Start by adding your expense.</div><br>
         </div>
       `;
     }  else {
