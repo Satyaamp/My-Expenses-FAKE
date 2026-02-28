@@ -633,15 +633,6 @@
    Today Action Row
 ================================ */
 
-/* Samll Screen  */
-
-.today-action-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  gap: 10px;
-}
 
 .add-expense-btn {
   display: inline-flex;
@@ -663,35 +654,6 @@
   border-color: #dc2626;
 }
 
-.today-expense-badge {
-  color: #f87171;
-  font-weight: 600;
-  font-size: 0.9rem;
-  background: #000;
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-}
-
-/* ===============================
-   Mobile Version
-================================ */
-
-@media (max-width: 480px) {
-  .today-action-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .add-expense-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .today-expense-badge {
-    text-align: center;
-  }
-}
 
 
 /* ===============================
@@ -762,4 +724,106 @@
 .empty-sub {
   font-size: 0.85rem;
   color: #888;
+}
+
+
+
+
+/* ===============================
+   DAY HEADER CARD
+================================ */
+
+.day-header-card {
+  padding: 12px 14px;
+  background: #1f2937;          /* dark background */
+  border-radius: 12px;
+  margin-bottom: 10px;
+
+  display: flex;
+  flex-direction: column;       /* date on top, amounts below */
+  gap: 6px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* ===============================
+   DATE TEXT
+================================ */
+.day-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #141414;
+  border-radius: 20px;
+  border-bottom: 1px solid #ff0b0b;
+  
+  margin-bottom: 10px;
+  transition: background 0.2s ease;
+}
+
+
+.day-header-date {
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.3px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.day-header-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.day-header-summary span {
+  background: none;
+  padding: 0;
+}
+
+
+/* ===============================
+   INCOME + EXPENSE ROW
+================================ */
+
+.day-header-row {
+  display: flex;
+  justify-content: space-between;  /* left-right separation */
+  align-items: center;
+  font-size: 14px;
+  gap:12px
+}
+
+/* ===============================
+   INCOME STYLE
+================================ */
+
+.income-amount {
+  color: #4ade80;   /* green */
+  font-weight: 600;
+  font-size: 17px;
+}
+
+/* ===============================
+   EXPENSE STYLE
+================================ */
+
+.expense-amount {
+  color: #ef4444;   /* red */
+  font-weight: 600;
+  font-size: 17px;
+}
+
+/* ===============================
+   OPTIONAL: SMALL BADGE STYLE
+================================ */
+
+.income-amount,
+.expense-amount {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
 }

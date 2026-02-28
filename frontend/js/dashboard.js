@@ -32,6 +32,10 @@ const EXPENSE_CATEGORIES = [
 ];
 
 
+function formatINR(amount) {
+  return Number(amount || 0).toLocaleString("en-IN");
+}
+
 /* ===============================
    CAROUSEL LOGIC
 ================================ */
@@ -191,12 +195,15 @@ async function loadDashboard() {
     // Update Text
     const balanceEl = document.getElementById("balance");
     if (balanceEl) balanceEl.innerText = `₹${balance}`;
+    if (balanceEl) balanceEl.innerText = `₹${formatINR(balance)}`;
     
     const incomeEl = document.getElementById("totalIncome");
     if (incomeEl) incomeEl.innerText = `₹${income}`;
+    if (incomeEl) incomeEl.innerText = `₹${formatINR(income)}`;
     
     const expenseEl = document.getElementById("totalExpense");
     if (expenseEl) expenseEl.innerText = `₹${expense}`;
+    if (expenseEl) expenseEl.innerText = `₹${formatINR(expense)}`;
 
     // Calculate Liquid Fill Percentages (Income is baseline)
     const base = income > 0 ? income : (expense > 0 ? expense : 1);
@@ -432,6 +439,7 @@ function renderScanPreview(isValidated = false) {
       </div>
       <div style="display:flex; align-items:center;">
         <div class="preview-amount">₹${item.amount}</div>
+        <div class="preview-amount">₹${formatINR(item.amount)}</div>
         <button class="delete-scan-btn" onclick="deleteScannedItem(${index})">✕</button>
       </div>
     `;
@@ -501,9 +509,11 @@ window.validateBudget = async function() {
             <div style="text-align: left;">
               <div style="font-weight: bold; color: #fff; font-size: 1rem;">${monthName} ${year}</div>
               <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">Available: ₹${balance}</div>
+              <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">Available: ₹${formatINR(balance)}</div>
             </div>
             <div style="text-align: right;">
               <div style="color: #ef4444; font-weight: bold;">Need ₹${totalAttempt}</div>
+              <div style="color: #ef4444; font-weight: bold;">Need ₹${formatINR(totalAttempt)}</div>
             </div>
           </div>
         `);
@@ -561,6 +571,7 @@ window.confirmScanUpload = async function() {
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
           <span style="color: rgba(255,255,255,0.9);">${b.monthName} ${b.year}</span>
           <span style="font-weight: bold; color: #34d399;">₹${b.balance}</span>
+          <span style="font-weight: bold; color: #34d399;">₹${formatINR(b.balance)}</span>
         </div>
       `).join('');
     };
@@ -619,6 +630,7 @@ async function loadRecentExpenses() {
       tr.innerHTML = `
         <td style="white-space: nowrap;">${date}</td>
         <td style="font-weight: 600; color: #34d399;">₹${exp.amount}</td>
+        <td style="font-weight: 600; color: #34d399;">₹${formatINR(exp.amount)}</td>
         <td>${exp.category}</td>
         <td style="opacity: 0.7;">${exp.description || "—"}</td>
       `;
@@ -880,6 +892,7 @@ async function loadMonthlyHistogram() {
     const totalYearly = filteredData.reduce((sum, e) => sum + e.amount, 0);
     const totalEl = document.getElementById("monthlyYearTotal");
     if (totalEl) totalEl.innerText = `Total: ₹${totalYearly.toFixed(2)}`;
+    if (totalEl) totalEl.innerText = `Total: ₹${formatINR(totalYearly)}`;
 
     if (filteredData.length === 0) {
       handleChartDataState("monthlyChart", false);
@@ -1099,7 +1112,7 @@ async function loadDayOfWeekChart(startDate = "", endDate = "") {
             padding: 10,
             cornerRadius: 8,
             callbacks: {
-              label: (c) => ` ₹${c.raw}`
+              label: (c) => ` ₹${formatINR(c.raw)}`
             }
           }
         },

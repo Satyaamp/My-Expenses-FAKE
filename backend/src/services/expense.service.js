@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Expense = require('../models/expense.model');
 const Income = require('../models/income.model');
 const { extractMonthYear } = require('../utils/date.util');
+const { insertExpense, updateExpense, deleteExpense } = require('./sql.service');
 
 
 // ---------------- CREATE EXPENSE ----------------
@@ -42,12 +43,14 @@ exports.createExpense = async (userId, data) => {
 
   }
 
-  return Expense.create({
+  const expense = await Expense.create({
     ...data,
     userId,
     month,
     year
   });
+  await insertExpense(expense);
+  return expense;
 };
 
 
@@ -196,6 +199,20 @@ exports.getMonthlySummary = async (userId, month, year) => {
   };
 };
 
+// ---------------- UPDATE EXPENSE ----------------
+exports.updateExpense = async (userId, expenseId, data) => {
+  const { month, year } = extractMonthYear(data.date);
+  
+  const expense = await Expense.findOneAndUpdate(
+    { _id: expenseId, userId },
+    { ...data, month, year },
+    { new: true }
+  );
+
+  if (!expense) throw new Error('Expense not found');
+  await updateExpense(expense); // Sync to SQL
+  return expense;
+};
 
 // ---------------- DELETE EXPENSE ----------------
 exports.deleteExpense = async (userId, expenseId) => {
@@ -205,6 +222,7 @@ exports.deleteExpense = async (userId, expenseId) => {
   });
 
   if (!expense) throw new Error('Expense not found');
+  await deleteExpense(expenseId); // Sync to SQL
   return expense;
 };
 

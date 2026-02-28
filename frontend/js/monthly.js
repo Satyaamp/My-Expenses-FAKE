@@ -89,6 +89,11 @@ if (pageMonthTitle) {
   });
 }
 
+
+function formatINR(amount) {
+  return Number(amount || 0).toLocaleString("en-IN");
+}
+
 /* Transaction Count Badge Click -> Scroll to List */
 if (monthTxCount) {
   monthTxCount.style.cursor = "pointer";
@@ -123,9 +128,9 @@ async function loadMonthlyData() {
   const expense = res.data.totalExpense || 0;
   const balance = res.data.balance || 0;
 
-  document.getElementById("monthlyIncome").innerText = `₹${income}`;
-  document.getElementById("monthlyExpense").innerText = `₹${expense}`;
-  document.getElementById("monthlyBalance").innerText = `₹${balance}`;
+  document.getElementById("monthlyIncome").innerText = `₹${formatINR(income)}`;
+  document.getElementById("monthlyExpense").innerText = `₹${formatINR(expense)}`;
+  document.getElementById("monthlyBalance").innerText = `₹${formatINR(balance)}`;
 
   // Calculate Liquid Fill Percentages (Income is baseline)
   const base = income > 0 ? income : (expense > 0 ? expense : 1);
@@ -180,7 +185,7 @@ function renderDailyAverage(totalExpense, year, month) {
   let html = "";
 
   if (totalExpense > 0) {
-    html = `<span class="daily-avg-badge">₹${Math.round(avg)} / day</span>`;
+    html = `<span class="daily-avg-badge">₹${formatINR(Math.round(avg))} / day</span>`;
   }
 
   if (avgElDesktop) avgElDesktop.innerHTML = html;
@@ -205,7 +210,7 @@ function renderTopCategory(categories) {
   // Find category with highest total
   const top = categories.reduce((prev, current) => (prev.total > current.total) ? prev : current);
   
-  const html = `<span class="daily-avg-badge" style="margin-top: 4px; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">${top.category} (₹${top.total})</span>`;
+  const html = `<span class="daily-avg-badge" style="margin-top: 4px; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">${top.category} (₹${formatINR(top.total)})</span>`;
 
   if (elDesktop) elDesktop.innerHTML = html;
   if (elMobile) elMobile.innerHTML = html;
@@ -236,7 +241,7 @@ function renderExpenseHistogram(categories) {
       <div class="histogram-header">
         <span class="category-name">${cat.category} <span style="font-size:0.7em; opacity:0.5; margin-left:4px;">▼</span></span>
         <span class="category-value">
-          ₹${cat.total}
+          ₹${formatINR(cat.total)}
           <span class="category-percent">${percent}%</span>
         </span>
       </div>
@@ -287,7 +292,7 @@ function renderExpenseHistogram(categories) {
                  <div style="font-size: 0.9rem; color: #fff;">${new Date(t.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</div>
                  <div style="font-size: 0.8rem; opacity: 0.6;">${t.description || 'No description'}</div>
                </div>
-               <div style="font-weight: 600; color: #ff0000;">₹${t.amount}</div>
+               <div style="font-weight: 600; color: #ff0000;">₹${formatINR(t.amount)}</div>
              </div>
            `).join('');
         }
@@ -320,7 +325,7 @@ function renderPaginatedList(container, txs, page) {
         <div style="font-size: 0.9rem; color: #fff;">${new Date(t.date).toLocaleDateString('en-IN', {day: 'numeric', month: 'short'})}</div>
         <div style="font-size: 0.8rem; opacity: 0.6;">${t.description || 'No description'}</div>
       </div>
-      <div style="font-weight: 600; color: #ef4444;">₹${t.amount}</div>
+      <div style="font-weight: 600; color: #ef4444;">₹${formatINR(t.amount)}</div>
     </div>
   `).join('');
 
@@ -420,7 +425,7 @@ function renderCategoryPie(categories) {
         },
         tooltip: {
           callbacks: {
-            label: (context) => ` ${context.label}: ₹${context.raw}`
+            label: (context) => ` ${context.label}: ₹${formatINR(context.raw)}`
           }
         }
       }
@@ -563,33 +568,43 @@ function renderMobileTransactions(dateStr) {
 
   html += `
     <div class="day-header-card">
-      <div class="day-header-date">${dateText}</div>
-      <div class="day-header-summary">
-        ${incomes.length > 0 ? `<span style="color:#4ade80; margin-right:8px;">₹${totalIncome}</span>` : ''}
-        
+
+      <div class="day-header-date">
+        ${dateText}
       </div>
-      
+
+      <div class="day-header-row">
+        <span class="income-amount">
+          ₹${formatINR(totalIncome || 0)}
+        </span>
+
+        <span class="expense-amount">
+          ₹${formatINR(totalExpense || 0)}
+        </span>
+      </div>
+
     </div>
   `;
 
   // Dynamic Add Button for Today
-  if (isToday) {
-    html += `
-    <div class="today-action-row">
+  // if (isToday) {
+  //   html += `
+  //   <div class="today-action-row">
 
-      <button 
-        onclick="openAddExpenseModal('${dateStr}')"
-        class="add-expense-btn"
-      >
-        ➕ Today Expense
-      </button>
+  //     <button 
+  //       onclick="openAddExpenseModal('${dateStr}')"
+  //       class="add-expense-btn"
+  //     >
+  //       ➕ Today Expense
+  //     </button>
 
-      <span class="today-expense-badge">
-        ₹${totalExpense}
-      </span>
+  //     <span class="today-expense-badge">
+  //       ₹${totalExpense}
+  //     </span>
 
-    </div>`;
-  }
+  //   </div>`;
+  // }
+
 
     if (!tx.length) {
       html += `
@@ -673,7 +688,7 @@ function renderTxItemHTML(t) {
       <div class="transaction-top">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="transaction-amount ${t.type === 'income' ? 'income' : 'expense'}" style="${t.type === 'income' ? 'color:#22c55e;' : ''}">
-            ${t.type === 'income' ? '+' : '-'}₹${t.amount}
+            ${t.type === 'income' ? '+' : '-'}₹${formatINR(t.amount)}
           </span>
           <span class="transaction-category">${t.category || t.source}</span>
         </div>
@@ -792,7 +807,7 @@ function selectDate(dateStr, cell) {
   const dateText = new Date(dateStr).toDateString();
   const badgeStyle = "margin-left: 10px; background: rgba(250, 204, 21, 0.15); border: 1px solid rgba(250, 204, 21, 0.3); color: #fef9c3; border-radius: 12px; padding: 4px 10px; font-size: 0.8rem; vertical-align: middle;";
   
-  document.getElementById("selectedDateTitle").innerHTML = `${dateText} <span style="${badgeStyle}">Exp: ₹${totalExpense}</span> ${incomes.length > 0 ? `<span style="${badgeStyle}; color:#4ade80; border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.15);">Inc: ₹${totalIncome}</span>` : ''}`;
+  document.getElementById("selectedDateTitle").innerHTML = `${dateText} <span style="${badgeStyle}">Exp: ₹${formatINR(totalExpense)}</span> ${incomes.length > 0 ? `<span style="${badgeStyle}; color:#4ade80; border-color:rgba(34,197,94,0.3); background:rgba(34,197,94,0.15);">Inc: ₹${formatINR(totalIncome)}</span>` : ''}`;
 
   const isToday = dateStr === new Date().toISOString().split('T')[0];
   let html = "";
@@ -1046,7 +1061,7 @@ function renderDailyChart(expenses, year, month) {
     if (day >= 1 && day <= daysInMonth) {
       data[day - 1] += e.amount;
       const desc = e.description || e.category;
-      details[day - 1].push(`${desc}: ₹${e.amount}`);
+      details[day - 1].push(`${desc}: ₹${formatINR(e.amount)}`);
     }
   });
 
@@ -1095,7 +1110,7 @@ function renderDailyChart(expenses, year, month) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (context) => `Total: ₹${context.raw}`,
+            label: (context) => `Total: ₹${formatINR(context.raw)}`,
             afterBody: (context) => {
               return details[context[0].dataIndex];
             }
@@ -1202,7 +1217,7 @@ function renderCumulativeChart(expenses, year, month) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (context) => `Total: ₹${context.raw}`
+            label: (context) => `Total: ₹${formatINR(context.raw)}`
           }
         }
       },
@@ -1445,9 +1460,6 @@ async function downloadMonthlyReport() {
      HELPERS
   ================================ */
 
-  const formatAmount = (val) =>
-    Number.isInteger(val) ? val : val.toFixed(2);
-
   /* ===============================
      HEADER / BANNER
   ================================ */
@@ -1536,7 +1548,7 @@ async function downloadMonthlyReport() {
 
   if (highest) {
     doc.text(
-      `Highest: ${highest.category} – Rs. ${formatAmount(highest.amount)} (${new Date(highest.date).toLocaleDateString("en-IN")})`,
+      `Highest: ${highest.category} – Rs. ${formatINR(highest.amount)} (${new Date(highest.date).toLocaleDateString("en-IN")})`,
       14,
       70
     );
@@ -1544,7 +1556,7 @@ async function downloadMonthlyReport() {
 
   if (lowest) {
     doc.text(
-      `Lowest: ${lowest.category} – Rs. ${formatAmount(lowest.amount)} (${new Date(lowest.date).toLocaleDateString("en-IN")})`,
+      `Lowest: ${lowest.category} – Rs. ${formatINR(lowest.amount)} (${new Date(lowest.date).toLocaleDateString("en-IN")})`,
       14,
       76
     );
@@ -1572,7 +1584,7 @@ async function downloadMonthlyReport() {
     const ctx = canvas.getContext("2d");
 
     const sortedCats = Object.entries(categoryTotals).sort(([, a], [, b]) => b - a);
-    const chartLabels = sortedCats.map(([k, v]) => `${k} - Rs. ${formatAmount(v)}`);
+    const chartLabels = sortedCats.map(([k, v]) => `${k} - Rs. ${formatINR(v)}`);
     const chartData = sortedCats.map(([, v]) => v);
 
     new Chart(ctx, {
@@ -1651,7 +1663,7 @@ async function downloadMonthlyReport() {
           title: { display: true, text: 'Spending by Day of the Week', color: '#111827', font: { size: 32, weight: 'bold', family: 'Helvetica' }, padding: { bottom: 30 } }
         },
         scales: {
-          x: { beginAtZero: true, ticks: { color: '#374151', font: { size: 20, family: 'Helvetica' }, callback: (value) => `Rs. ${value}` }, grid: { color: '#e5e7eb' } },
+          x: { beginAtZero: true, ticks: { color: '#374151', font: { size: 20, family: 'Helvetica' }, callback: (value) => `Rs. ${formatINR(value)}` }, grid: { color: '#e5e7eb' } },
           y: { ticks: { color: '#1f2937', font: { size: 24, family: 'Helvetica' } }, grid: { display: false } }
         },
         layout: { padding: 40 }
@@ -1682,7 +1694,7 @@ async function downloadMonthlyReport() {
     let textY = nextY + 20;
     days.forEach((day, index) => {
       const amount = dayOfWeekTotals[index];
-      doc.text(`${day}: Rs. ${formatAmount(amount)}`, 145, textY);
+      doc.text(`${day}: Rs. ${formatINR(amount)}`, 145, textY);
       textY += 7;
     });
 
@@ -1701,7 +1713,7 @@ async function downloadMonthlyReport() {
 
   const tableData = currentMonthExpenses.map(tx => [
     new Date(tx.date).toLocaleDateString("en-IN"),
-    `Rs. ${formatAmount(tx.amount)}`,
+    `Rs. ${formatINR(tx.amount)}`,
     tx.category
   ]);
 
@@ -1922,11 +1934,11 @@ window.openDeleteConfirmation = function(id) {
   const newBalance = currentBalance + tx.amount;
 
   details.innerHTML = `
-    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${tx.amount})</div>
+    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${formatINR(tx.amount)})</div>
     <div style="margin-bottom: 8px;"><strong>Date:</strong> ${new Date(tx.date).toLocaleDateString('en-IN')}</div>
     <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
-      Current Balance: <span style="color: #fff;">₹${currentBalance}</span><br>
-      <span style="color: #34d399; font-weight:bold;">New Balance after delete: ₹${newBalance}</span>
+      Current Balance: <span style="color: #fff;">₹${formatINR(currentBalance)}</span><br>
+      <span style="color: #34d399; font-weight:bold;">New Balance after delete: ₹${formatINR(newBalance)}</span>
     </div>
   `;
 
@@ -2005,7 +2017,7 @@ function openCopyConfirmation(tx, targetDate) {
   const balanceText = document.getElementById("monthlyBalance").innerText;
 
   details.innerHTML = `
-    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${tx.amount})</div>
+    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${formatINR(tx.amount)})</div>
     <div style="margin-bottom: 8px;"><strong>From:</strong> ${new Date(tx.date).toLocaleDateString('en-IN')}</div>
     <div style="margin-bottom: 8px; color: #34d399;"><strong>To:</strong> ${new Date(targetDate).toLocaleDateString('en-IN')}</div>
     <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
