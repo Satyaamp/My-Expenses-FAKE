@@ -572,6 +572,17 @@
       border-color: #34d399;
       transform: scale(1.05); 
     }
+
+    .btn-icon-small.delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-color: #ef4444;
+    }
+    .btn-icon-small.delete:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border-color: #ef4444;
+    }
     /* Ensure side positioning */
     .transaction-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 
@@ -593,6 +604,20 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-5px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Drag and Drop Styles */
+    .calendar-day.drag-over {
+      background: rgba(34, 197, 94, 0.2) !important;
+      border: 2px dashed #34d399 !important;
+      transform: scale(1.05);
+      z-index: 10;
+    }
+    .transaction-item[draggable="true"] {
+      cursor: grab;
+    }
+    .transaction-item[draggable="true"]:active {
+      cursor: grabbing;
     }
   </style>
 </head>
@@ -706,21 +731,6 @@
 
   </section>
 
-  <!-- Mobile Only Stats Grid -->
-  <!-- <section class="mobile-stats-grid">
-    <div class="summary-card glass-card">
-      <div class="card-content" style="text-align: center;">
-        <h4>Daily Average</h4>
-        <div id="dailyAvgIndicatorMobile" style="margin-top: 5px;"></div>
-      </div>
-    </div>
-    <div class="summary-card glass-card">
-      <div class="card-content" style="text-align: center;">
-        <h4>Top Expense</h4>
-        <div id="topCategoryIndicatorMobile" style="margin-top: 5px;"></div>
-      </div>
-    </div>
-  </section> -->
 
   <section class="mobile-date-view glass-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;" id="mobileMonthSwipe">
@@ -794,6 +804,58 @@
     <button onclick="document.getElementById('monthSelectModal').classList.add('hidden')" style="margin-top: 20px; width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; cursor: pointer;">Cancel</button>
   </div>
 </div>
+
+<!-- COPY TRANSACTION CONFIRMATION MODAL -->
+<div id="copyConfirmModal" class="modal hidden">
+  <div class="modal-content glass-card">
+    <h3>Confirm Copy</h3>
+    <p style="opacity: 0.8; margin-bottom: 20px;">Copy this transaction to the new date?</p>
+    
+    <div id="copyDetails" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="modal-actions">
+      <button id="confirmCopyBtn" style="background: #34d399; color: #000;">Confirm Copy</button>
+      <button class="cancel" onclick="document.getElementById('copyConfirmModal').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE TRANSACTION CONFIRMATION MODAL -->
+<div id="deleteConfirmModal" class="modal hidden">
+  <div class="modal-content glass-card">
+    <h3>Confirm Delete</h3>
+    <p style="opacity: 0.8; margin-bottom: 20px;">Are you sure you want to delete this transaction?</p>
+    
+    <div id="deleteDetails" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="modal-actions">
+      <button id="confirmDeleteBtn" style="background: #ef4444; color: #fff;">Delete</button>
+      <button class="cancel" onclick="document.getElementById('deleteConfirmModal').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE TRANSACTION CONFIRMATION MODAL -->
+<div id="deleteConfirmModal" class="modal hidden">
+  <div class="modal-content glass-card">
+    <h3>Confirm Delete</h3>
+    <p style="opacity: 0.8; margin-bottom: 20px;">Are you sure you want to delete this transaction?</p>
+    
+    <div id="deleteDetails" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="modal-actions">
+      <button id="confirmDeleteBtn" style="background: #ef4444; color: #fff;">Delete</button>
+      <button class="cancel" onclick="document.getElementById('deleteConfirmModal').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ADD EXPENSE MODAL (For Daily View) -->
 <div id="expenseModal" class="modal hidden">

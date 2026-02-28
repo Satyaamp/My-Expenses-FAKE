@@ -558,6 +558,7 @@ function renderMobileTransactions(dateStr) {
           </div>
           <div class="tx-actions">
             <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
+            <button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>
           </div>
         </div>
         <div class="transaction-description">
@@ -603,12 +604,15 @@ function renderCalendar(year, month) {
     const txCount = getTransactionsForDate(dateStr).length;
     const hasTx = txCount > 0;
     const disabled = new Date(year,month,d) > today ? "disabled" : "";
+    const isDesktop = window.innerWidth > 768;
 
     html += `
       <div class="calendar-day 
         ${hasTx ? "day-has-tx" : "day-no-tx"} 
         ${disabled}"
-        data-date="${dateStr}">
+        data-date="${dateStr}"
+        ${isDesktop && !disabled ? `ondragover="window.allowDrop(event)" ondragleave="window.handleDragLeave(event)" ondrop="window.handleDrop(event)"` : ''}
+        >
         ${d}
       </div>`;
   }
@@ -668,14 +672,16 @@ function selectDate(dateStr, cell) {
     html += `<div class="empty-state"><p>📭</p><p>No transactions</p></div>`;
   } else {
     html += tx.map(t => `
-      <div class="transaction-item">
+      <div class="transaction-item" draggable="true" ondragstart="window.handleDragStart(event, '${t._id}')">
         <div class="transaction-top">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="transaction-amount expense">-₹${t.amount}</span>
             <span class="transaction-category">${t.category}</span>
           </div>
+          
           <div class="tx-actions">
             <button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>
+            <button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>
           </div>
         </div>
         <div class="transaction-description">
@@ -1624,10 +1630,10 @@ window.openEditExpenseModal = function(id) {
   
   document.getElementById("expenseModalTitle").innerText = "Edit Expense";
   
-  // Edit Mode: Only Amount Editable
+  // Edit Mode
   document.getElementById("expenseCategory").disabled = true;
   document.getElementById("expenseDate").disabled = true;
-  document.getElementById("expenseDesc").disabled = true;
+  document.getElementById("expenseDesc");
   document.getElementById("expenseDate").style.cursor = "not-allowed";
 
   modal.classList.remove("hidden");
@@ -1659,8 +1665,141 @@ window.saveExpense = async function() {
     }
 
     closeExpenseModal();
-    loadMonthlyData(); // Refresh data
+    loadMonthlyData(); 
   } catch (err) {
     showToast(err.message, "error");
   }
 };
+
+
+/* ===============================
+   DELETE TRANSACTION LOGIC
+================================ */
+
+window.openDeleteConfirmation = function(id) {
+  const tx = currentMonthExpenses.find(t => t._id === id);
+  if (!tx) return;
+
+  const modal = document.getElementById("deleteConfirmModal");
+  const details = document.getElementById("deleteDetails");
+  const confirmBtn = document.getElementById("confirmDeleteBtn");
+  
+  // Calculate projected balance (Current + Expense Amount)
+  const balanceText = document.getElementById("monthlyBalance").innerText.replace(/[^\d.-]/g, '');
+  const currentBalance = parseFloat(balanceText) || 0;
+  const newBalance = currentBalance + tx.amount;
+
+  details.innerHTML = `
+    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${tx.amount})</div>
+    <div style="margin-bottom: 8px;"><strong>Date:</strong> ${new Date(tx.date).toLocaleDateString('en-IN')}</div>
+    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
+      Current Balance: <span style="color: #fff;">₹${currentBalance}</span><br>
+      <span style="color: #34d399; font-weight:bold;">New Balance after delete: ₹${newBalance}</span>
+    </div>
+  `;
+
+  confirmBtn.onclick = () => executeDelete(id);
+  modal.classList.remove("hidden");
+};
+
+async function executeDelete(id) {
+  try {
+    await apiRequest(`/expenses/${id}`, "DELETE");
+    document.getElementById("deleteConfirmModal").classList.add("hidden");
+    showToast("Transaction deleted successfully", "success");
+    loadMonthlyData(); 
+  } catch (err) {
+    showToast("Failed to delete: " + err.message, "error");
+  }
+}
+
+/* ===============================
+   DRAG AND DROP LOGIC (Desktop)
+================================ */
+
+let draggedTxId = null;
+
+window.handleDragStart = function(e, id) {
+  draggedTxId = id;
+  e.dataTransfer.effectAllowed = "copy";
+  e.dataTransfer.setData("text/plain", id);
+};
+
+window.allowDrop = function(e) {
+  e.preventDefault();
+  const cell = e.target.closest('.calendar-day');
+  if (cell && !cell.classList.contains('disabled')) {
+    cell.classList.add('drag-over');
+    e.dataTransfer.dropEffect = "copy";
+  }
+};
+
+window.handleDragLeave = function(e) {
+  const cell = e.target.closest('.calendar-day');
+  if (cell) {
+    cell.classList.remove('drag-over');
+  }
+};
+
+window.handleDrop = function(e) {
+  e.preventDefault();
+  const cell = e.target.closest('.calendar-day');
+  if (!cell) return;
+  
+  cell.classList.remove('drag-over');
+  
+  const targetDate = cell.dataset.date;
+  if (!draggedTxId || !targetDate) return;
+
+  // Find transaction details
+  const tx = currentMonthExpenses.find(t => t._id === draggedTxId);
+  if (!tx) return;
+
+  // Check if moving to same date
+  const sourceDate = new Date(tx.date).toISOString().split('T')[0];
+  if (sourceDate === targetDate) return;
+
+  openCopyConfirmation(tx, targetDate);
+};
+
+function openCopyConfirmation(tx, targetDate) {
+  const modal = document.getElementById("copyConfirmModal");
+  const details = document.getElementById("copyDetails");
+  const confirmBtn = document.getElementById("confirmCopyBtn");
+  
+  // Calculate remaining purse (Monthly Balance)
+  // Note: Moving within the same month doesn't change the total balance, 
+  // but we show it for validation/context.
+  const balanceText = document.getElementById("monthlyBalance").innerText;
+
+  details.innerHTML = `
+    <div style="margin-bottom: 8px;"><strong>Transaction:</strong> ${tx.category} (₹${tx.amount})</div>
+    <div style="margin-bottom: 8px;"><strong>From:</strong> ${new Date(tx.date).toLocaleDateString('en-IN')}</div>
+    <div style="margin-bottom: 8px; color: #34d399;"><strong>To:</strong> ${new Date(targetDate).toLocaleDateString('en-IN')}</div>
+    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem;">
+      Current Monthly Balance: <span style="color: #fff;">${balanceText}</span><br>
+      <span style="opacity: 0.6; font-size: 0.8rem;">(Balance will update after copy)</span>
+    </div>
+  `;
+
+  confirmBtn.onclick = () => executeCopy(tx, targetDate);
+  modal.classList.remove("hidden");
+}
+
+async function executeCopy(tx, targetDate) {
+  try {
+    // 1. Create new transaction on target date
+    await apiRequest("/expenses", "POST", {
+      amount: tx.amount,
+      category: tx.category,
+      date: targetDate,
+      description: tx.description
+    });
+
+    document.getElementById("copyConfirmModal").classList.add("hidden");
+    alert("Transaction copied successfully");
+    loadMonthlyData();
+  } catch (err) {
+    showToast("Failed to copy transaction: " + err.message, "error");
+  }
+}
