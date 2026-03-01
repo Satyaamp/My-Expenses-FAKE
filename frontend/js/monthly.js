@@ -790,18 +790,24 @@ window.changeExpensePage = function(direction, dateStr) {
 
 /* Helper to render individual transaction item HTML */
 function renderTxItemHTML(t) {
+  const isCarryForward = t.category === "Carry Forward";
+  const canEdit = t.type === 'expense' && !isCarryForward;
+
   return `
-    <div class="transaction-item" ${t.type === 'expense' ? `draggable="true" ondragstart="window.handleDragStart(event, '${t._id}')"` : ''}>
+    <div class="transaction-item" ${canEdit ? `draggable="true" ondragstart="window.handleDragStart(event, '${t._id}')"` : ''}>
       <div class="transaction-top">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="transaction-amount ${t.type === 'income' ? 'income' : 'expense'}" style="${t.type === 'income' ? 'color:#22c55e;' : ''}">
             ₹${formatINR(t.amount)}
           </span>
-          <span class="transaction-category">${t.category || t.source}</span>
+          <span class="transaction-category">
+            ${t.category || t.source}
+            ${isCarryForward ? '<span title="Read-only" style="margin-left:6px; font-size:0.9em; opacity:0.8;">🔒</span>' : ''}
+          </span>
         </div>
         <div class="tx-actions">
-          ${t.type === 'expense' ? `<button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>` : ''}
-          ${t.type === 'expense' ? `<button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>` : ''}
+          ${canEdit ? `<button class="btn-icon-small" onclick="openEditExpenseModal('${t._id}')" title="Edit">✎</button>` : ''}
+          ${canEdit ? `<button class="btn-icon-small delete" onclick="openDeleteConfirmation('${t._id}')" title="Delete">✕</button>` : ''}
         </div>
       </div>
       <div class="transaction-description">
@@ -2398,7 +2404,8 @@ window.openCarryForwardModal = function(amount) {
 };
 
 window.executeCarryForward = async function() {
-  const amount = document.getElementById("cfAmount").dataset.value;
+  const rawAmount = document.getElementById("cfAmount").dataset.value;
+  const amount = parseFloat(rawAmount);
   const category = document.getElementById("cfCategory").value;
   
   if (!amount || !category) {
@@ -2429,7 +2436,7 @@ window.executeCarryForward = async function() {
       amount: amount,
       category: category,
       date: expenseDate,
-      description: `Balance carried forward (To ${nextMonthName})`
+      description: `Balance forward (To ${nextMonthName})`
     });
 
     // 2. Income in Next Month (1st Day)
@@ -2437,16 +2444,26 @@ window.executeCarryForward = async function() {
     
     await apiRequest("/income", "POST", {
       amount: amount,
+      amount: rawAmount,
       source: `${category} (From ${currentMonthName})`,
       date: incomeDate
     });
 
     document.getElementById("carryForwardModal").classList.add("hidden");
     document.body.classList.remove("modal-open");
-    showToast("Balance carried forward successfully!", "success");
+    showToast("Balance forward successfully!", "success");
     
-    // Refresh
-    loadMonthlyData();
+    // Auto-navigate to next month to show the moved funds
+    // Check if next month is accessible (not in future)
+    const today = new Date();
+    const nextMonthDate = new Date(year, month, 1); // month is 1-based from split, so this creates date for 1st of next month
+    const currentRealMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    if (nextMonthDate <= currentRealMonthStart) {
+      changeMonth(1);
+    } else {
+      loadMonthlyData(); // Stay on current month if next is future
+    }
     
   } catch (err) {
     showToast(err.message, "error");
