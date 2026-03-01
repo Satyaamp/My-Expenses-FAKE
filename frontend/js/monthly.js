@@ -2262,7 +2262,7 @@ window.saveExpense = async function() {
     }
 
     if (editId) {
-      // Workaround: Delete old, then Create new (since PUT route is 404)
+      // Delete old and create new to ensure budget validation is applied
       await apiRequest(`/expenses/${editId}`, "DELETE");
       await apiRequest("/expenses", "POST", { amount, category, date, description });
       showToast("Expense updated successfully", "success");

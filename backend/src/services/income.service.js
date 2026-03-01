@@ -1,11 +1,9 @@
 const Income = require('../models/income.model');
 const { extractMonthYear } = require('../utils/date.util');
-const { insertIncome, updateIncome, deleteIncome } = require('./sql.service');
 
 exports.createIncome = async (userId, data) => {
   const { month, year } = extractMonthYear(data.date);
   const income = await Income.create({ ...data, userId, month, year });
-  await insertIncome(income);
   return income;
 };
 
@@ -29,7 +27,6 @@ exports.updateIncome = async (userId, incomeId, data) => {
   );
 
   if (!income) throw new Error('Income not found');
-  await updateIncome(income); // Sync to SQL
   return income;
 };
 
@@ -37,6 +34,5 @@ exports.deleteIncome = async (userId, incomeId) => {
   const income = await Income.findOneAndDelete({ _id: incomeId, userId });
   
   if (!income) throw new Error('Income not found');
-  await deleteIncome(incomeId); // Sync to SQL
   return income;
 };

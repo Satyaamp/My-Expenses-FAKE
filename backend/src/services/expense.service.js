@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const Expense = require('../models/expense.model');
 const Income = require('../models/income.model');
 const { extractMonthYear } = require('../utils/date.util');
-const { insertExpense, updateExpense, deleteExpense } = require('./sql.service');
 
 
 // ---------------- CREATE EXPENSE ----------------
@@ -49,7 +48,6 @@ exports.createExpense = async (userId, data) => {
     month,
     year
   });
-  await insertExpense(expense);
   return expense;
 };
 
@@ -210,7 +208,6 @@ exports.updateExpense = async (userId, expenseId, data) => {
   );
 
   if (!expense) throw new Error('Expense not found');
-  await updateExpense(expense); // Sync to SQL
   return expense;
 };
 
@@ -222,7 +219,6 @@ exports.deleteExpense = async (userId, expenseId) => {
   });
 
   if (!expense) throw new Error('Expense not found');
-  await deleteExpense(expenseId); // Sync to SQL
   return expense;
 };
 

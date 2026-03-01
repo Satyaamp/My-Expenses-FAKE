@@ -13,38 +13,60 @@ exports.create = async (req, res) => {
   }
 };
 
-exports.weekly = async (req, res) =>
-  success(res, await service.getWeekly(req.user.id, req.query.startDate, req.query.endDate));
+exports.weekly = async (req, res) => {
+  try {
+    success(res, await service.getWeekly(req.user.id, req.query.startDate, req.query.endDate));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-exports.summary = async (req, res) =>
-  success(res, await service.categorySummary(req.user.id, req.query.startDate, req.query.endDate));
+exports.summary = async (req, res) => {
+  try {
+    success(res, await service.categorySummary(req.user.id, req.query.startDate, req.query.endDate));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 exports.balance = async (req, res) => {
-  const data = await service.getRemainingBalance(req.user.id);
-  success(res, data, 'Balance fetched successfully');
+  try {
+    const data = await service.getRemainingBalance(req.user.id);
+    success(res, data, 'Balance fetched successfully');
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.monthlySummary = async (req, res) => {
-  const { month, year } = req.query;
+  try {
+    const { month, year } = req.query;
 
-  if (!month || !year)
-    return res.status(400).json({ message: 'Month and Year required' });
+    if (!month || !year)
+      return res.status(400).json({ message: 'Month and Year required' });
 
-  const data = await service.getMonthlySummary(
-    req.user.id,
-    month,
-    year
-  );
+    const data = await service.getMonthlySummary(
+      req.user.id,
+      month,
+      year
+    );
 
-  success(res, data, 'Monthly summary fetched');
+    success(res, data, 'Monthly summary fetched');
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.delete = async (req, res) => {
-  const data = await service.deleteExpense(
-    req.user.id,
-    req.params.id
-  );
-  success(res, data, 'Expense deleted successfully');
+  try {
+    const data = await service.deleteExpense(
+      req.user.id,
+      req.params.id
+    );
+    success(res, data, 'Expense deleted successfully');
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 };
 
 
@@ -87,20 +109,28 @@ exports.addBulkExpenses = async (req, res) => {
 
 
 exports.getAll = async (req, res) => {
-  const expenses = await service.getAllExpenses(req.user.id, req.query.startDate, req.query.endDate);
-  success(res, expenses, 'Expenses fetched successfully');
+  try {
+    const expenses = await service.getAllExpenses(req.user.id, req.query.startDate, req.query.endDate);
+    success(res, expenses, 'Expenses fetched successfully');
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.getByMonthYear = async (req, res) => {
-  const { month, year } = req.query;
+  try {
+    const { month, year } = req.query;
 
-  const expenses = await service.getByMonthYear(
-    req.user.id,
-    month,
-    year
-  );
+    const expenses = await service.getByMonthYear(
+      req.user.id,
+      month,
+      year
+    );
 
-  success(res, expenses, "Monthly expenses fetched");
+    success(res, expenses, "Monthly expenses fetched");
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.yearly = async (req, res) => {
