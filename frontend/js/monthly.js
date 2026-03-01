@@ -39,6 +39,9 @@ const EXPENSES_PER_PAGE = 3;
 let currentSelectPage = 1;
 const SELECT_PER_PAGE = 2;
 
+let currentIncomePage = 1;
+const INCOME_PER_PAGE = 1;
+
 /* ===============================
    INIT
 ================================ */
@@ -505,6 +508,7 @@ function setupMobileDaySearch() {
       bubble.onclick = () => {
         document.querySelectorAll(".day-bubble").forEach(b => b.classList.remove("active"));
         bubble.classList.add("active");
+        currentExpensePage = 1; // Reset pagination on day change
         renderMobileTransactions(dateStr);
         bubble.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       };
@@ -660,13 +664,14 @@ function renderMobileTransactions(dateStr) {
         </div>
       `;
     } else {
-    // Render Income Section
     if (incomes.length > 0) {
-      // html += `<div class="section-header" style="color:#4ade80">Income</div>`;
+
+      // show added budget (Currently not shown on phoen type screen)
+
+      // html += `<div class="section-header" style="color:#4ade80; font-size: 0.9rem; margin: 10px 0 5px 0; font-weight: 600;">Income</div>`;
       // html += incomes.map(t => renderTxItemHTML(t)).join("");
     }
 
-    // Render Expense Section
     if (expenses.length > 0) {
 
       const totalPages = Math.ceil(expenses.length / EXPENSES_PER_PAGE);
@@ -730,7 +735,7 @@ function renderTxItemHTML(t) {
       <div class="transaction-top">
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="transaction-amount ${t.type === 'income' ? 'income' : 'expense'}" style="${t.type === 'income' ? 'color:#22c55e;' : ''}">
-            ${t.type === 'income' ? '+' : '-'}₹${formatINR(t.amount)}
+            ₹${formatINR(t.amount)}
           </span>
           <span class="transaction-category">${t.category || t.source}</span>
         </div>
@@ -824,6 +829,7 @@ function renderCalendar(year, month) {
   document.querySelectorAll(".calendar-day:not(.empty)").forEach(cell => {
     cell.addEventListener("click", () => {
       if (cell.classList.contains("disabled")) return;
+      currentSelectPage = 1; // Reset pagination on date change
       selectDate(cell.dataset.date, cell);
     });
   });
@@ -914,6 +920,7 @@ function selectDate(dateStr, cell) {
   `;
   // const isToday = dateStr === new Date().toISOString().split('T')[0];
   // let html = "";
+  let html = "";
 
   // if (isToday) {
   //   html += `
@@ -939,11 +946,46 @@ function selectDate(dateStr, cell) {
     }  else {
     // Render Income Section
     if (incomes.length > 0) {
-      // html += `<div class="section-header" style="color:#4ade80">Income</div>`;
-      // html += incomes.map(t => renderTxItemHTML(t)).join("");
+
+      const totalIncomePages = Math.ceil(incomes.length / INCOME_PER_PAGE);
+
+      currentIncomePage = Math.max(1, Math.min(currentIncomePage, totalIncomePages));
+
+      const start = (currentIncomePage - 1) * INCOME_PER_PAGE;
+      const end = start + INCOME_PER_PAGE;
+
+      const paginatedIncome = incomes.slice(start, end);
+
+      html += `
+        <div class="income-header-row">
+          <div class="income-title">Income</div>
+          <div class="income-line"></div>
+          ${
+            totalIncomePages > 1 ? `
+            <div class="income-pagination">
+              <button 
+                onclick="changeIncomePage(-1, '${dateStr}')"
+                ${currentIncomePage === 1 ? "disabled" : ""}
+              >◀</button>
+
+              <span>${currentIncomePage}/${totalIncomePages}</span>
+
+              <button 
+                onclick="changeIncomePage(1, '${dateStr}')"
+                ${currentIncomePage === totalIncomePages ? "disabled" : ""}
+              >▶</button>
+            </div>
+            ` : ""
+          }
+        </div>
+      `;
+
+      html += paginatedIncome.map(t => renderTxItemHTML(t)).join("");
     }
 
-    // Render Expense Section
+
+
+// Render Expense Section
     if (expenses.length > 0) {
 
       const totalPages = Math.ceil(expenses.length / SELECT_PER_PAGE);
@@ -953,40 +995,54 @@ function selectDate(dateStr, cell) {
 
       const paginatedExpenses = expenses.slice(start, end);
 
+
+      html += `
+        <div class="section-header-row">
+
+          <div class="section-title">Expenses</div>
+
+          <div class="section-line"></div>
+
+          ${totalPages > 1 ? `
+            <div class="pagination-wrapper">
+              <button 
+                class="pagination-btn"
+                onclick="changeSelectPage(-1, '${dateStr}')"
+                ${currentSelectPage === 1 ? "disabled" : ""}
+              >
+                ◀
+              </button>
+
+              <span class="pagination-info">
+                ${currentSelectPage} / ${totalPages}
+              </span>
+
+              <button 
+                class="pagination-btn"
+                onclick="changeSelectPage(1, '${dateStr}')"
+                ${currentSelectPage === totalPages ? "disabled" : ""}
+              >
+                ▶
+              </button>
+            </div>
+          ` : ""}
+
+        </div>
+      `;
+
+
       html += paginatedExpenses.map(t => renderTxItemHTML(t)).join("");
-
-      if (totalPages > 1) {
-        html += `
-          <div class="pagination-wrapper">
-
-            <button 
-              class="pagination-btn"
-              onclick="changeSelectPage(-1, '${dateStr}')"
-              ${currentSelectPage === 1 ? "disabled" : ""}
-            >
-              ◀
-            </button>
-
-            <span class="pagination-info">
-              ${currentSelectPage} / ${totalPages}
-            </span>
-
-            <button 
-              class="pagination-btn"
-              onclick="changeSelectPage(1, '${dateStr}')"
-              ${currentSelectPage === totalPages ? "disabled" : ""}
-            >
-              ▶
-            </button>
-
-          </div>
-        `;
-      }
     }
   }
 
   list.innerHTML = html;
 }
+
+
+window.changeIncomePage = function (step, dateStr) {
+  currentIncomePage += step;
+  selectDate(dateStr, document.querySelector(".calendar-day.selected"));
+};
 
 
 window.changeSelectPage = function(direction, dateStr) {
@@ -2142,6 +2198,7 @@ async function executeCopy(tx, targetDate) {
 
     document.getElementById("copyConfirmModal").classList.add("hidden");
     alert("Transaction copied successfully");
+    showToast("Transaction copied successfully", "success");
     loadMonthlyData();
   } catch (err) {
     showToast("Failed to copy transaction: " + err.message, "error");

@@ -246,16 +246,32 @@
    TRANSACTION PANEL
 ===================================== */
 .transactions-panel {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 0;
 }
 
 .transaction-item {
-  padding: 14px;
-  border-radius: 12px;
+  position: relative;
+  padding: 14px 16px;
   background: rgb(0 0 0 / 78%);
-  margin-bottom: 10px;
+}
+
+/* Soft inset divider */
+.transaction-item::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* Remove divider from last item */
+.transaction-item:last-child::after {
+  display: none;
 }
 
 .transaction-amount {
@@ -343,7 +359,7 @@
     margin-top: 15px;
     padding: 16px;
     border-radius: 14px;
-    background: rgba(255,255,255,0.05);
+    background: rgba(14, 10, 10, 0.05);
     border: 1px solid rgba(255,255,255,0.1);
   }
 
@@ -535,30 +551,52 @@
 
 /* DESKTOP */
 
+.section-header-row {
+  display: flex;
+  align-items: center;
+  margin: 12px 0 8px 0;
+}
+
+.section-title {
+  font-weight: bolder;
+  font-size: 18px;
+  margin-right: 14px;
+  white-space: nowrap;
+  color: #f87171; /* red for expenses */
+}
+
+.section-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  margin-right: 14px;
+  background: linear-gradient(
+    to right,
+    #f87171,
+    rgba(248, 113, 113, 0.3),
+    transparent
+  );
+}
+
 .pagination-wrapper {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 14px;
-  margin-top: 14px;
+  gap: 6px;
 }
 
 .pagination-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #ffffff;
+  background: rgba(248, 113, 113, 0.12);   /* soft red background */
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;                         /* main red */
+  border-radius: 8px;
+  padding: 6px 10px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.25);
-  border-color: #dc2626;
+.pagination-btn:hover {
+  background: rgba(248, 113, 113, 0.25);
+  border-color: #f87171;
 }
 
 .pagination-btn:disabled {
@@ -567,10 +605,10 @@
 }
 
 .pagination-info {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  color: #aaa;
 }
+
 
 
 /* Small Screen */
@@ -826,4 +864,48 @@
   padding: 4px 8px;
   border-radius: 8px;
   background: rgba(255,255,255,0.05);
+}
+
+.income-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0 5px 0;
+}
+
+.income-title {
+  color: #4ade80;
+  font-size: 18px;
+  font-weight: bolder;
+  margin-right: 12px;
+}
+
+.income-pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.income-pagination button {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.income-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.income-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  margin-right: 12px;
+  background: linear-gradient(
+    to right,
+    #4ade80,
+    rgba(74, 222, 128, 0.4),
+    transparent
+  );
 }
