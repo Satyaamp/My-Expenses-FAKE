@@ -7,8 +7,6 @@ const expenseSchema = new mongoose.Schema({
   category: { 
     type: String, 
     enum: [
-      'College Fee',
-      'Hostel Fee',
       'Food', 
       'Transport', 
       'Groceries', 
@@ -20,7 +18,7 @@ const expenseSchema = new mongoose.Schema({
       'Cylinder',  
       'Internet Bill',  
       'EMI',            
-      'Recharge',      
+      'Carry Forward',      
       'Other'
     ],
     required: true 

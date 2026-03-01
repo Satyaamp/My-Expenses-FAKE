@@ -869,6 +869,29 @@
   </div>
 </div>
 
+<!-- CARRY FORWARD MODAL -->
+<div id="carryForwardModal" class="modal hidden">
+  <div class="modal-content glass-card">
+    <h3>Carry Forward Balance</h3>
+    <p style="opacity: 0.8; margin-bottom: 15px;">Transfer remaining balance to next month.</p>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display:block; font-size:0.8rem; margin-bottom:5px; color: #aaa;">Amount</label>
+      <input type="text" id="cfAmount" disabled style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: #facc15; font-weight: bold; font-size: 1.1rem;" />
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display:block; font-size:0.8rem; margin-bottom:5px; color: #aaa;">Category</label>
+      <input type="text" id="cfCategory" value="Carry Forward" readonly style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: rgba(255,255,255,0.8); cursor: not-allowed;" />
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="executeCarryForward()" style="background: #facc15; color: #000; font-weight: bold;">Confirm Transfer</button>
+      <button class="cancel" onclick="document.getElementById('carryForwardModal').classList.add('hidden'); document.body.classList.remove('modal-open');">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE TRANSACTION CONFIRMATION MODAL -->
 <div id="deleteConfirmModal" class="modal hidden">
   <div class="modal-content glass-card">

@@ -30,6 +30,7 @@ let categoryPieChart = null;
 let currentSlide = 0;
 let modalCurrentYear = new Date().getFullYear();
 let currentMonth = "";
+let currentMonthBalance = 0;
 
 // for mobile screen only
 let currentExpensePage = 1;
@@ -131,6 +132,7 @@ async function loadMonthlyData() {
   const income = res.data.totalIncome || 0;
   const expense = res.data.totalExpense || 0;
   const balance = res.data.balance || 0;
+  currentMonthBalance = balance;
 
   document.getElementById("monthlyIncome").innerText = `₹${formatINR(income)}`;
   document.getElementById("monthlyExpense").innerText = `₹${formatINR(expense)}`;
@@ -750,6 +752,28 @@ function renderMobileTransactions(dateStr) {
     }
   }
 
+  // --- SHOW REMAINING PURSE (Last Day Only) ---
+  const [y, m] = currentMonth.split("-");
+  const lastDay = new Date(y, m, 0).getDate();
+  const lastDateStr = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+
+  if (dateStr === lastDateStr && currentMonthBalance > 0) {
+    html += `
+      <div class="transaction-item" onclick="openCarryForwardModal(${currentMonthBalance})" style="background: rgba(250, 204, 21, 0.1); border: 1px dashed rgba(250, 204, 21, 0.5); cursor: pointer; transition: transform 0.2s;">
+        <div class="transaction-top" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="transaction-amount" style="color: #facc15;">₹${formatINR(currentMonthBalance)}</span>
+            <span class="transaction-category">Remaining Purse</span>
+          </div>
+          <div style="color: #facc15; font-size: 1.2rem;">➔</div>
+        </div>
+        <div class="transaction-description" style="opacity: 0.7; font-size: 0.85rem;">
+          Tap to carry forward to next month
+        </div>
+      </div>
+    `;
+  }
+
   mobileListContainer.innerHTML = html;
 }
 
@@ -1069,6 +1093,28 @@ function selectDate(dateStr, cell) {
 
       html += paginatedExpenses.map(t => renderTxItemHTML(t)).join("");
     }
+  }
+
+  // --- SHOW REMAINING PURSE (Desktop) ---
+  const [y, m] = currentMonth.split("-");
+  const lastDay = new Date(y, m, 0).getDate();
+  const lastDateStr = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+
+  if (dateStr === lastDateStr && currentMonthBalance > 0) {
+    html += `
+      <div class="transaction-item" onclick="openCarryForwardModal(${currentMonthBalance})" style="background: rgba(250, 204, 21, 0.1); border: 1px dashed rgba(250, 204, 21, 0.5); cursor: pointer; transition: transform 0.2s;">
+        <div class="transaction-top" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="transaction-amount" style="color: #facc15;">₹${formatINR(currentMonthBalance)}</span>
+            <span class="transaction-category">Remaining Purse</span>
+          </div>
+          <div style="color: #facc15; font-size: 1.2rem;">➔</div>
+        </div>
+        <div class="transaction-description" style="opacity: 0.7; font-size: 0.85rem;">
+          Tap to carry forward to next month
+        </div>
+      </div>
+    `;
   }
 
   list.innerHTML = html;
@@ -2335,3 +2381,74 @@ async function executeCopy(tx, targetDate) {
     showToast("Failed to copy transaction: " + err.message, "error");
   }
 }
+
+/* ===============================
+   CARRY FORWARD LOGIC
+================================ */
+window.openCarryForwardModal = function(amount) {
+  const modal = document.getElementById("carryForwardModal");
+  if (!modal) return;
+  
+  document.getElementById("cfAmount").value = `₹${formatINR(amount)}`;
+  document.getElementById("cfAmount").dataset.value = amount; // Store raw value
+  document.getElementById("cfCategory").value = "Carry Forward";
+  
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+};
+
+window.executeCarryForward = async function() {
+  const amount = document.getElementById("cfAmount").dataset.value;
+  const category = document.getElementById("cfCategory").value;
+  
+  if (!amount || !category) {
+    showToast("Invalid details", "error");
+    return;
+  }
+
+  try {
+    const [year, month] = currentMonth.split("-").map(Number);
+    
+    // Calculate next month
+    let nextYear = year;
+    let nextMonth = month + 1;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+
+    // Get Month Names for Description
+    const currentMonthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    const nextMonthName = new Date(nextYear, nextMonth - 1).toLocaleString('default', { month: 'long' });
+
+    // 1. Expense in Current Month (Last Day)
+    const lastDay = new Date(year, month, 0).getDate();
+    const expenseDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    
+    await apiRequest("/expenses", "POST", {
+      amount: amount,
+      category: category,
+      date: expenseDate,
+      description: `Balance carried forward (To ${nextMonthName})`
+    });
+
+    // 2. Income in Next Month (1st Day)
+    const incomeDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
+    
+    await apiRequest("/income", "POST", {
+      amount: amount,
+      source: `${category} (From ${currentMonthName})`,
+      date: incomeDate
+    });
+
+    document.getElementById("carryForwardModal").classList.add("hidden");
+    document.body.classList.remove("modal-open");
+    showToast("Balance carried forward successfully!", "success");
+    
+    // Refresh
+    loadMonthlyData();
+    
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+};

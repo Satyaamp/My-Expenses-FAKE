@@ -24,12 +24,7 @@ let yearlyChart = null;
 let dayOfWeekChart = null;
 let scannedExpensesData = []; // Store parsed data temporarily
 let currentSlide = 0;
-
-const EXPENSE_CATEGORIES = [
-  'College Fee', 'Hostel Fee', 'Food', 'Transport', 'Groceries', 'Rent', 
-  'Stationery', 'Personal Care', 'Electric Bill', 'Water Bill', 'Cylinder', 
-  'Internet Bill', 'EMI', 'Recharge', 'Other'
-];
+let expenseCategories = [];
 
 
 function formatINR(amount) {
@@ -170,16 +165,24 @@ function handleChartDataState(canvasId, hasData) {
 ================================ */
 async function populateCategorySelect() {
   const select = document.getElementById("expenseCategory");
-  if (!select) return;
-
-  select.innerHTML = '<option value="" disabled selected>Select Category</option>';
   
-  EXPENSE_CATEGORIES.forEach(cat => {
-    const option = document.createElement("option");
-    option.value = cat;
-    option.textContent = cat;
-    select.appendChild(option);
-  });
+  try {
+    const res = await apiRequest("/expenses/categories");
+    expenseCategories = res.data || [];
+
+    if (select) {
+      select.innerHTML = '<option value="" disabled selected>Select Category</option>';
+      
+      expenseCategories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load categories", err);
+  }
 }
 
 /* ===============================
@@ -418,12 +421,12 @@ function renderScanPreview(isValidated = false) {
   scannedExpensesData.forEach((item, index) => {
     // Default to 'Other' if the parsed category isn't in our valid list
     let currentCat = item.category;
-    if (!EXPENSE_CATEGORIES.includes(currentCat)) {
+    if (!expenseCategories.includes(currentCat)) {
       currentCat = 'Other';
       item.category = 'Other'; // Update data to match
     }
 
-    const options = EXPENSE_CATEGORIES.map(cat => 
+    const options = expenseCategories.map(cat => 
       `<option value="${cat}" ${cat === currentCat ? "selected" : ""} style="background: #333; color: white;">${cat}</option>`
     ).join("");
 
