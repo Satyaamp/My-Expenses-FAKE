@@ -1,5 +1,4 @@
-const CACHE_NAME = "dhanrekha-v33"; // UPDATE THIS VERSION ON EVERY DEPLOY TO FORCE REFRESH
-
+const CACHE_NAME = "dhanrekha-v3
 const STATIC_ASSETS = [
   "/",
   "/login",

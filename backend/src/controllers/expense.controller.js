@@ -47,6 +47,16 @@ exports.delete = async (req, res) => {
   success(res, data, 'Expense deleted successfully');
 };
 
+
+exports.update = async (req, res) => {
+  try {
+    const data = await service.updateExpense(req.user.id, req.params.id, req.body);
+    success(res, data, 'Expense updated successfully');
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
 exports.addBulkExpenses = async (req, res) => {
   const expenses = req.body;
   const results = { added: [], failed: [] };

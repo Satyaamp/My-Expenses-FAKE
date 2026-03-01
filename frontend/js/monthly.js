@@ -2136,6 +2136,12 @@ window.openAddExpenseModal = function(dateStr) {
     document.getElementById("expenseCategory").disabled = false;
     document.getElementById("expenseDesc").disabled = false;
     dateInput.disabled = true; 
+    if(document.getElementById("saveExpenseBtn")) {
+      const btn = document.getElementById("saveExpenseBtn");
+      btn.innerText = "Save";
+      btn.style.background = ""; // Reset to default CSS
+      btn.style.color = "";
+    }
     
     document.body.classList.add("modal-open");
   }
@@ -2151,6 +2157,12 @@ window.closeExpenseModal = function() {
     document.getElementById("expenseDesc").value = "";
     document.getElementById("expenseCategory").value = "";
     document.getElementById("editExpenseId").value = "";
+    if(document.getElementById("saveExpenseBtn")) {
+      const btn = document.getElementById("saveExpenseBtn");
+      btn.innerText = "Save";
+      btn.style.background = ""; // Reset to default CSS
+      btn.style.color = "";
+    }
   }
 };
 
@@ -2212,6 +2224,12 @@ window.openEditExpenseModal = function(id) {
   document.getElementById("editExpenseId").value = tx._id;
   
   document.getElementById("expenseModalTitle").innerText = "Edit Expense";
+  if(document.getElementById("saveExpenseBtn")) {
+    const btn = document.getElementById("saveExpenseBtn");
+    btn.innerText = "Update";
+    btn.style.background = "#3b82f6"; // Blue color for Update
+    btn.style.color = "white";
+  }
   
   // Edit Mode
   document.getElementById("expenseCategory").disabled = true;
@@ -2244,8 +2262,9 @@ window.saveExpense = async function() {
     }
 
     if (editId) {
-      // Update existing expense (PUT) to avoid double-counting against budget
-      await apiRequest(`/expenses/${editId}`, "PUT", { amount, category, date, description });
+      // Workaround: Delete old, then Create new (since PUT route is 404)
+      await apiRequest(`/expenses/${editId}`, "DELETE");
+      await apiRequest("/expenses", "POST", { amount, category, date, description });
       showToast("Expense updated successfully", "success");
     } else {
       // Create new expense
@@ -2261,7 +2280,8 @@ window.saveExpense = async function() {
     // Re-enable button
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerText = "Save";
+      // If editId is still present (error case), keep "Update", otherwise "Save"
+      saveBtn.innerText = document.getElementById("editExpenseId").value ? "Update" : "Save";
     }
   }
 };

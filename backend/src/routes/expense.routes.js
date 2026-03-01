@@ -16,6 +16,7 @@ router.get('/balance', auth, ctrl.balance);
 router.get('/summary/monthly', auth, ctrl.monthlySummary);
 router.get('/yearly', auth, ctrl.yearly);
 router.delete('/:id', auth, ctrl.delete);
+router.put('/:id', auth, ctrl.update);
 router.get('/month', auth, ctrl.getByMonthYear);
 
 
