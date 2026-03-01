@@ -1,42 +1,52 @@
 require('dotenv').config();
 const path = require('path');
-const fs = require('fs');
+const express = require('express');
+
 const app = require('./src/app');
 const connectDB = require('./src/config/db');
 
-// ✅ Render-safe port
 const PORT = process.env.PORT || 5000;
+const FRONTEND_PATH = path.join(__dirname, '../frontend');
 
-// ✅ Serve Static Files (CSS, JS, Images)
-app.use(require('express').static(path.join(__dirname, '../frontend')));
+// Serve Static Files
+app.use(express.static(FRONTEND_PATH));
 
-// ✅ Clean URL Routes (Serve HTML without extension)
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
+// Routes
+const routes = [
+  'index',
+  'login',
+  'signup',
+  'dashboard',
+  'monthly',
+  'yearly',
+  'profile',
+  'forgot-password',
+  'reset-password',
+  'sitemap'
+];
 
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../frontend/login.html')));
+routes.forEach(route => {
+  const routePath = route === 'index' ? '/' : `/${route}`;
+  const fileName = route === 'index' ? 'index.html' : `${route}.html`;
 
-app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, '../frontend/signup.html')));
-app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dashboard.html')));
-app.get('/monthly', (req, res) => res.sendFile(path.join(__dirname, '../frontend/monthly.html')));
-app.get('/yearly', (req, res) => res.sendFile(path.join(__dirname, '../frontend/yearly.html')));
-app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../frontend/profile.html')));
-app.get('/forgot-password', (req, res) => res.sendFile(path.join(__dirname, '../frontend/forgot-password.html')));
-app.get('/reset-password', (req, res) => res.sendFile(path.join(__dirname, '../frontend/reset-password.html')));
-app.get('/sitemap', (req, res) => res.sendFile(path.join(__dirname, '../frontend/sitemap.html')));
-
-// 404 Fallback for unknown routes
-app.get(/.*/, (req, res) => {
-  res.status(404).sendFile(path.join(__dirname, '../frontend/404.html'));
+  app.get(routePath, (req, res) => {
+    res.sendFile(path.join(FRONTEND_PATH, fileName));
+  });
 });
 
-// ✅ Connect DB before starting server
+// 404
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(FRONTEND_PATH, '404.html'));
+});
+
+// Start Server
 connectDB()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Server running on ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   })
-  .catch((err) => {
-    console.error('DB connection failed:', err);
+  .catch(err => {
+    console.error('Database connection failed:', err.message);
     process.exit(1);
   });

@@ -392,15 +392,16 @@ function renderCategoryPie(categories) {
   if (!ctx) return;
 
   if (categoryPieChart) categoryPieChart.destroy();
-
   if (!categories || categories.length === 0) return;
 
   const labels = categories.map(c => c.category);
   const data = categories.map(c => c.total);
-  
+
   // Vibrant colors
   const colors = [
-    "#7C7CFF", "#22C55E", "#FACC15", "#EF4444", "#38BDF8", "#A78BFA", "#FB923C", "#EC4899"
+    "#7C7CFF", "#22C55E", "#FACC15",
+    "#EF4444", "#38BDF8", "#A78BFA",
+    "#FB923C", "#EC4899"
   ];
 
   categoryPieChart = new Chart(ctx, {
@@ -425,11 +426,46 @@ function renderCategoryPie(categories) {
       plugins: {
         legend: {
           position: "bottom",
-          labels: { color: "#fff", boxWidth: 12, font: { size: 11 }, padding: 20 }
+          labels: {
+            color: "#fff",
+            boxWidth: 12,
+            font: { size: 11 },
+            padding: 20
+          }
         },
+
         tooltip: {
+          backgroundColor: "rgba(0,0,0,0.95)",
+          borderColor: "#22C55E",
+          borderWidth: 2,
+          cornerRadius: 14,
+          padding: 16,
+          displayColors: false,
+          titleColor: "#22C55E",
+          bodyColor: "#ffffff",
+          titleFont: {
+            size: 14,
+            weight: "bold"
+          },
+          bodyFont: {
+            size: 13
+          },
           callbacks: {
-            label: (context) => ` ${context.label}: ₹${formatINR(context.raw)}`
+            title: (context) => {
+              return context[0].label;
+            },
+
+            label: (context) => {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const value = context.raw;
+              const percentage = ((value / total) * 100).toFixed(1);
+
+              return [
+                "---------------------------",
+                `Amount : ₹${formatINR(value)}`,
+                `Share  : ${percentage}%`
+              ];
+            }
           }
         }
       }
@@ -1234,7 +1270,7 @@ function renderDailyChart(expenses, year, month) {
   };
 
   if (isMobile) {
-    dataset.borderRadius = 4;
+    dataset.borderRadius = 6;
   } else {
     dataset.tension = 0.4;
     dataset.fill = true;
@@ -1264,14 +1300,55 @@ function renderDailyChart(expenses, year, month) {
       },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (context) => `Total: ₹${formatINR(context.raw)}`,
-            afterBody: (context) => {
-              return details[context[0].dataIndex];
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.95)",
+        borderColor: "#34d399",
+        borderWidth: 2,
+        cornerRadius: 14,
+        padding: 16,
+        displayColors: false,
+        titleColor: "#34d399",
+        bodyColor: "#ffffff",
+        titleFont: {
+          size: 14,
+          weight: "bold"
+        },
+        bodyFont: {
+          size: 13
+        },
+        callbacks: {
+          title: (context) => {
+            const day = parseInt(context[0].label, 10);
+            const fullDate = new Date(year, month - 1, day);
+
+            return fullDate.toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            });
+          },
+
+          label: (context) => {
+            return `Total: ₹${formatINR(context.raw)}`;
+          },
+
+          afterBody: (context) => {
+            const index = context[0].dataIndex;
+            const transactions = details[index];
+
+            if (!transactions.length) {
+              return ["", "No transactions"];
             }
+
+            return [
+              "",
+              "Transactions:",
+              "-------------------------",
+              ...transactions
+            ];
           }
         }
+      }
       },
       scales: {
         y: {
@@ -1312,22 +1389,24 @@ function renderDailyChart(expenses, year, month) {
    CUMULATIVE CHART
 ================================ */
 function renderCumulativeChart(expenses, year, month) {
-  const ctx = document.getElementById("cumulativeChart");
-  if (!ctx) return;
+  const canvas = document.getElementById("cumulativeChart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
 
   if (cumulativeChart) cumulativeChart.destroy();
 
   const daysInMonth = new Date(year, month, 0).getDate();
   const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  
-  // 1. Calculate Daily Totals
+
+  // 1️⃣ Daily totals
   const daily = new Array(daysInMonth).fill(0);
   expenses.forEach(e => {
     const d = new Date(e.date).getDate();
-    if (d >= 1 && d <= daysInMonth) daily[d-1] += e.amount;
+    if (d >= 1 && d <= daysInMonth) daily[d - 1] += e.amount;
   });
 
-  // 2. Calculate Cumulative
+  // 2️⃣ Cumulative
   const cumulative = [];
   let sum = 0;
   for (let x of daily) {
@@ -1335,9 +1414,10 @@ function renderCumulativeChart(expenses, year, month) {
     cumulative.push(sum);
   }
 
-  // 3. Adjust for Current Month (Stop line at today/last transaction)
+  // 3️⃣ Adjust for current month
   const now = new Date();
   let chartData = cumulative;
+  let chartLabels = labels;
 
   if (now.getFullYear() === year && now.getMonth() + 1 === month) {
     const today = now.getDate();
@@ -1348,49 +1428,83 @@ function renderCumulativeChart(expenses, year, month) {
     });
     const cutoff = Math.max(today, lastTxDay);
     chartData = cumulative.slice(0, cutoff);
+    chartLabels = labels.slice(0, cutoff);
   }
 
-  // 4. Render Chart
+  const isMobile = window.innerWidth <= 768;
+
+  // 4️⃣ Gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, "rgba(250, 204, 21, 0.5)");
+  gradient.addColorStop(1, "rgba(250, 204, 21, 0.05)");
+
   cumulativeChart = new Chart(ctx, {
-    type: 'line',
+    type: "line",
     data: {
-      labels: labels,
+      labels: chartLabels,
       datasets: [{
-        label: 'Cumulative Spending',
+        label: "Cumulative Spending",
         data: chartData,
-        borderColor: '#FACC15',
-        backgroundColor: 'rgba(250, 204, 21, 0.1)',
+        borderColor: "#FACC15",
+        backgroundColor: gradient,
+        borderWidth: isMobile ? 3 : 4,
         fill: true,
-        tension: 0.4,
-        pointRadius: 2,
-        pointHoverRadius: 5
+        tension: 0.45,
+        pointRadius: isMobile ? 0 : 3,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "#FACC15"
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
+      animation: {
+        duration: 1600,
+        easing: "easeOutCubic"
+      },
+
       plugins: {
         legend: { display: false },
+
         tooltip: {
+          backgroundColor: "rgba(0,0,0,0.9)",
+          borderColor: "#FACC15",
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 14,
+          displayColors: false,
           callbacks: {
-            label: (context) => `Total: ₹${formatINR(context.raw)}`
+            title: (context) => {
+              const day = parseInt(context[0].label, 10);
+              const fullDate = new Date(year, month - 1, day);
+              return fullDate.toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+              });
+            },
+            label: (context) =>
+              `Total Till Date: ₹${formatINR(context.raw)}`
           }
         }
       },
+
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: "rgba(255, 255, 255, 0.1)" },
-          ticks: { color: "rgba(255, 255, 255, 0.7)" }
+          grid: { color: "rgba(255,255,255,0.05)" },
+          ticks: { color: "rgba(255,255,255,0.7)" }
         },
         x: {
           grid: { display: false },
-          ticks: { color: "rgba(255, 255, 255, 0.7)" }
+          ticks: { color: "rgba(255,255,255,0.7)" }
         }
-      },
-      animation: {
-        duration: 1500,
-        easing: 'easeOutQuart'
       }
     }
   });
@@ -1404,8 +1518,14 @@ function setupCarousel() {
   const track = document.getElementById("analyticsTrack");
   const dotsContainer = document.getElementById("carouselDots");
   const slides = document.querySelectorAll(".carousel-slide");
-  
+
   if (!track || slides.length === 0) return;
+
+  let startX = 0;
+  let currentTranslate = 0;
+  let prevTranslate = 0;
+  let isDragging = false;
+  let animationID;
 
   // Create dots
   dotsContainer.innerHTML = "";
@@ -1416,45 +1536,61 @@ function setupCarousel() {
     dotsContainer.appendChild(dot);
   });
 
-  let startX = 0;
-  let isDragging = false;
+  // Touch + Mouse Support
+  track.addEventListener("touchstart", startDrag);
+  track.addEventListener("touchmove", drag);
+  track.addEventListener("touchend", endDrag);
 
-  // Touch events for swipe
-  track.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
+  track.addEventListener("mousedown", startDrag);
+  track.addEventListener("mousemove", drag);
+  track.addEventListener("mouseup", endDrag);
+  track.addEventListener("mouseleave", endDrag);
+
+  function startDrag(e) {
     isDragging = true;
-  });
-
-  track.addEventListener("touchend", (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    const endX = e.changedTouches[0].clientX;
-    const diff = startX - endX;
-
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
-        nextSlide();
-      } else {
-        prevSlide();
-      }
-    }
-  });
-
-  // Resize Observer: Adjust height if content changes (e.g. data loads)
-  const resizeObserver = new ResizeObserver(() => {
-    updateHeight();
-  });
-  slides.forEach(slide => resizeObserver.observe(slide));
-
-  function updateHeight() {
-    const activeSlide = slides[currentSlide];
-    if (activeSlide && container) {
-      container.style.height = activeSlide.offsetHeight + "px";
-    }
+    startX = getPositionX(e);
+    animationID = requestAnimationFrame(animation);
+    track.style.transition = "none";
   }
 
-  function updateCarousel() {
-    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  function drag(e) {
+    if (!isDragging) return;
+    const currentPosition = getPositionX(e);
+    currentTranslate = prevTranslate + currentPosition - startX;
+  }
+
+  function endDrag() {
+    if (!isDragging) return;
+    cancelAnimationFrame(animationID);
+    isDragging = false;
+
+    const movedBy = currentTranslate - prevTranslate;
+
+    if (movedBy < -80 && currentSlide < slides.length - 1) {
+      currentSlide++;
+    }
+    if (movedBy > 80 && currentSlide > 0) {
+      currentSlide--;
+    }
+
+    updateCarousel(true);
+  }
+
+  function getPositionX(e) {
+    return e.type.includes("mouse") ? e.pageX : e.touches[0].clientX;
+  }
+
+  function animation() {
+    track.style.transform = `translateX(${currentTranslate}px)`;
+    if (isDragging) requestAnimationFrame(animation);
+  }
+
+  function updateCarousel(animate = false) {
+    track.style.transition = animate ? "transform 0.5s cubic-bezier(.22,.61,.36,1)" : "none";
+    track.style.transform = `translateX(-${currentSlide * container.offsetWidth}px)`;
+    prevTranslate = -currentSlide * container.offsetWidth;
+    currentTranslate = prevTranslate;
+
     document.querySelectorAll(".dot").forEach((d, i) => {
       d.classList.toggle("active", i === currentSlide);
     });
@@ -1463,7 +1599,7 @@ function setupCarousel() {
       slide.classList.toggle("active-slide", i === currentSlide);
     });
 
-    // Re-render charts to trigger animation when slide becomes active
+    // Re-render charts when active
     const [year, month] = currentMonth.split("-");
     if (currentSlide === 0 && currentMonthExpenses.length > 0) {
       renderDailyChart(currentMonthExpenses, +year, +month);
@@ -1476,26 +1612,21 @@ function setupCarousel() {
     updateHeight();
   }
 
-  function nextSlide() {
-    if (currentSlide < slides.length - 1) {
-      currentSlide++;
-      updateCarousel();
-    }
-  }
-
-  function prevSlide() {
-    if (currentSlide > 0) {
-      currentSlide--;
-      updateCarousel();
+  function updateHeight() {
+    const activeSlide = slides[currentSlide];
+    if (activeSlide && container) {
+      container.style.height = activeSlide.offsetHeight + "px";
     }
   }
 
   function goToSlide(index) {
     currentSlide = index;
-    updateCarousel();
+    updateCarousel(true);
   }
 
-  // Initial height set
+  // Adjust on window resize
+  window.addEventListener("resize", () => updateCarousel(false));
+
   updateCarousel();
 }
 
