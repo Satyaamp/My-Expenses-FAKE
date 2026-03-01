@@ -790,7 +790,7 @@ window.changeExpensePage = function(direction, dateStr) {
 
 /* Helper to render individual transaction item HTML */
 function renderTxItemHTML(t) {
-  const isCarryForward = t.category === "Carry Forward";
+  const isCarryForward = t.category === "Carry Forward" || (t.category && t.category.trim() === "Carry Forward");
   const canEdit = t.type === 'expense' && !isCarryForward;
 
   return `
