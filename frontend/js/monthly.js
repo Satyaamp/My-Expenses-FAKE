@@ -2229,6 +2229,7 @@ window.saveExpense = async function() {
   const date = document.getElementById("expenseDate").value;
   const description = document.getElementById("expenseDesc").value;
   const editId = document.getElementById("editExpenseId").value;
+  const saveBtn = document.getElementById("saveExpenseBtn");
 
   if (!amount || !category || !date) {
     showToast("Amount and category are required", "error");
@@ -2236,14 +2237,19 @@ window.saveExpense = async function() {
   }
 
   try {
-    // 1. Create the new/updated expense
-    await apiRequest("/expenses", "POST", { amount, category, date, description });
-    
-    // 2. If editing, delete the old one
+    // Disable button to prevent double-click duplicates
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerText = "Saving...";
+    }
+
     if (editId) {
-      await apiRequest(`/expenses/${editId}`, "DELETE");
+      // Update existing expense (PUT) to avoid double-counting against budget
+      await apiRequest(`/expenses/${editId}`, "PUT", { amount, category, date, description });
       showToast("Expense updated successfully", "success");
     } else {
+      // Create new expense
+      await apiRequest("/expenses", "POST", { amount, category, date, description });
       showToast("Expense added successfully", "success");
     }
 
@@ -2251,6 +2257,12 @@ window.saveExpense = async function() {
     loadMonthlyData(); 
   } catch (err) {
     showToast(err.message, "error");
+  } finally {
+    // Re-enable button
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Save";
+    }
   }
 };
 
