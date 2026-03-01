@@ -15,6 +15,8 @@ backend/.env
 # Migration scripts
 backend/migrate.js
 
+backend/src/services/sql.service.js
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
